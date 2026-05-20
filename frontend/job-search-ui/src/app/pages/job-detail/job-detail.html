@@ -106,6 +106,23 @@
       <a class="button" [href]="currentJob.url" target="_blank" rel="noreferrer">Open job post</a>
     }
   </section>
+
+  <section class="panel description">
+    <h2>Recruiter Message Draft</h2>
+    <div class="score-actions">
+      <button class="button" type="button" [disabled]="isGeneratingMessage()" (click)="generateMessage()">
+        {{ isGeneratingMessage() ? 'Generating...' : 'Generate Message' }}
+      </button>
+      <button class="button" type="button" [disabled]="!generatedMessage().trim()" (click)="copyGeneratedMessage()">
+        Copy to clipboard
+      </button>
+    </div>
+    <textarea
+      rows="10"
+      [ngModel]="generatedMessage()"
+      (ngModelChange)="generatedMessage.set($event)"
+      placeholder="Generate and edit your recruiter message here."></textarea>
+  </section>
 } @else {
   <section class="panel empty-state">Job not found.</section>
 }

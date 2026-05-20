@@ -86,6 +86,38 @@ public sealed class JobService : IJobService
         return FitScoreResultDto.FromEntity(scoreResult);
     }
 
+    public async Task<GeneratedRecruiterMessageDto?> GenerateRecruiterMessageAsync(Guid id, CancellationToken cancellationToken = default)
+    {
+        var job = await repository.GetByIdAsync(id, cancellationToken);
+        if (job is null)
+        {
+            return null;
+        }
+
+        var matchingSkills = job.FitScoreResult?.MatchingSkills
+            .Where(skill => !string.IsNullOrWhiteSpace(skill))
+            .Select(skill => skill.Trim())
+            .Distinct(StringComparer.OrdinalIgnoreCase)
+            .Take(3)
+            .ToArray()
+            ?? Array.Empty<string>();
+
+        var skillsText = matchingSkills.Length > 0
+            ? string.Join(", ", matchingSkills)
+            : "modern full-stack development, cloud architecture, and API design";
+
+        var message =
+            $"Hi there,\n\n" +
+            $"I'm excited about the {job.Title} opportunity at {job.Company}. " +
+            $"My background aligns well with the role, especially in {skillsText}. " +
+            "I enjoy building reliable products, collaborating across teams, and driving outcomes from idea to production.\n\n" +
+            "You can review my portfolio at donbowman.info. " +
+            "If helpful, I'd love to connect and briefly discuss how I could contribute.\n\n" +
+            "Best regards,";
+
+        return new GeneratedRecruiterMessageDto(message);
+    }
+
     private static void ValidateCreateRequest(CreateJobRequest request)
     {
         if (string.IsNullOrWhiteSpace(request.Company))

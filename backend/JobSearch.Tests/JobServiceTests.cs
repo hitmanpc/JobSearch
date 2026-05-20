@@ -90,6 +90,31 @@ public sealed class JobServiceTests
         Assert.Contains("React", updatedJob.FitScoreResult.MissingSkills);
     }
 
+    [Fact]
+    public async Task GenerateRecruiterMessageAsync_IncludesCompanyTitleSkillsAndPortfolio()
+    {
+        var service = CreateService();
+        var job = await service.CreateJobAsync(new CreateJobRequest(
+            "Acme",
+            "Senior Full Stack Engineer",
+            null,
+            RemoteType.Remote,
+            null,
+            "Build systems.",
+            null));
+
+        await service.ScoreFitAsync(job.Id);
+
+        var generated = await service.GenerateRecruiterMessageAsync(job.Id);
+
+        Assert.NotNull(generated);
+        Assert.Contains("Acme", generated.Message);
+        Assert.Contains("Senior Full Stack Engineer", generated.Message);
+        Assert.Contains("Angular", generated.Message);
+        Assert.Contains(".NET", generated.Message);
+        Assert.Contains("donbowman.info", generated.Message);
+    }
+
     private static JobService CreateService()
     {
         return new JobService(new InMemoryJobRepository(), new MockFitScoringService(), TimeProvider.System);

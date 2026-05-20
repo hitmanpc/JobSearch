@@ -61,4 +61,11 @@ public sealed class JobsController : ControllerBase
         var scoreResult = await jobService.ScoreFitAsync(id, cancellationToken);
         return scoreResult is null ? NotFound() : Ok(scoreResult);
     }
+
+    [HttpPost("{id:guid}/generate-message")]
+    public async Task<ActionResult<GeneratedRecruiterMessageDto>> GenerateMessage(Guid id, CancellationToken cancellationToken)
+    {
+        var generatedMessage = await jobService.GenerateRecruiterMessageAsync(id, cancellationToken);
+        return generatedMessage is null ? NotFound() : Ok(generatedMessage);
+    }
 }
