@@ -1,0 +1,11 @@
+<header class="app-header">
+  <a class="brand" routerLink="/">{{ appName }}</a>
+  <nav aria-label="Primary navigation">
+    <a routerLink="/" routerLinkActive="active" [routerLinkActiveOptions]="{ exact: true }">Jobs</a>
+    <a routerLink="/pipeline" routerLinkActive="active">Pipeline</a>
+  </nav>
+</header>
+
+<main class="app-shell">
+  <router-outlet />
+</main>

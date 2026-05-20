@@ -1,0 +1,40 @@
+<section class="toolbar">
+  <div>
+    <h1 class="page-title">Pipeline</h1>
+    <p class="muted">A simple status board for the application process.</p>
+  </div>
+  <a class="button secondary" routerLink="/">Jobs</a>
+</section>
+
+@if (errorMessage()) {
+  <p class="error">{{ errorMessage() }}</p>
+}
+
+@if (isLoading()) {
+  <section class="panel empty-state">Loading pipeline...</section>
+} @else {
+  <section class="pipeline-board" aria-label="Application pipeline">
+    @for (column of columns(); track column.status) {
+      <article class="pipeline-column">
+        <header>
+          <h2>{{ column.status }}</h2>
+          <span>{{ column.jobs.length }}</span>
+        </header>
+
+        <div class="pipeline-list">
+          @if (column.jobs.length === 0) {
+            <p class="empty-column">No jobs</p>
+          } @else {
+            @for (job of column.jobs; track job.id) {
+              <a class="pipeline-card" [routerLink]="['/jobs', job.id]">
+                <strong>{{ job.title }}</strong>
+                <span>{{ job.company }}</span>
+                <small>{{ job.location || 'Location unknown' }} · {{ job.remoteType }}</small>
+              </a>
+            }
+          }
+        </div>
+      </article>
+    }
+  </section>
+}

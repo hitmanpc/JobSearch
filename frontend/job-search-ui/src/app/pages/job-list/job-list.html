@@ -1,0 +1,102 @@
+<section class="toolbar">
+  <div>
+    <h1 class="page-title">Jobs</h1>
+    <p class="muted">Track opportunities, fit, and next steps from one place.</p>
+  </div>
+  <a class="button secondary" routerLink="/pipeline">Pipeline</a>
+</section>
+
+<section class="panel add-job">
+  <h2>Add job</h2>
+  <form (ngSubmit)="addJob()" #jobForm="ngForm">
+    <label>
+      <span>Company</span>
+      <input name="company" [(ngModel)]="form.company" required maxlength="120" />
+    </label>
+
+    <label>
+      <span>Title</span>
+      <input name="title" [(ngModel)]="form.title" required maxlength="160" />
+    </label>
+
+    <label>
+      <span>Location</span>
+      <input name="location" [(ngModel)]="form.location" maxlength="160" />
+    </label>
+
+    <label>
+      <span>Remote type</span>
+      <select name="remoteType" [(ngModel)]="form.remoteType">
+        @for (remoteType of remoteTypes; track remoteType) {
+          <option [value]="remoteType">{{ remoteType }}</option>
+        }
+      </select>
+    </label>
+
+    <label>
+      <span>URL</span>
+      <input name="url" [(ngModel)]="form.url" type="url" maxlength="500" />
+    </label>
+
+    <label>
+      <span>Fit score</span>
+      <input name="fitScore" [(ngModel)]="form.fitScore" type="number" min="0" max="100" />
+    </label>
+
+    <label class="wide">
+      <span>Description</span>
+      <textarea name="description" [(ngModel)]="form.description" rows="4"></textarea>
+    </label>
+
+    <div class="form-actions wide">
+      <button class="button" type="submit" [disabled]="jobForm.invalid || isSaving()">
+        {{ isSaving() ? 'Adding...' : 'Add job' }}
+      </button>
+    </div>
+  </form>
+</section>
+
+@if (errorMessage()) {
+  <p class="error">{{ errorMessage() }}</p>
+}
+
+<section class="jobs-section">
+  @if (isLoading()) {
+    <div class="panel empty-state">Loading jobs...</div>
+  } @else if (sortedJobs().length === 0) {
+    <div class="panel empty-state">No jobs yet. Add the first opportunity above.</div>
+  } @else {
+    <div class="job-grid">
+      @for (job of sortedJobs(); track trackByJobId($index, job)) {
+        <article class="panel job-card">
+          <div class="job-card-header">
+            <div>
+              <h2><a [routerLink]="['/jobs', job.id]">{{ job.title }}</a></h2>
+              <p>{{ job.company }}</p>
+            </div>
+            <span class="fit-score">{{ job.fitScore ?? '-' }}</span>
+          </div>
+
+          <div class="job-meta">
+            <span>{{ job.location || 'Location unknown' }}</span>
+            <span>{{ job.remoteType }}</span>
+            <span class="status-pill">{{ job.status }}</span>
+          </div>
+
+          <div class="job-actions">
+            <select
+              aria-label="Update status"
+              [ngModel]="job.status"
+              (ngModelChange)="statusChanged(job, $event)"
+              [name]="'status-' + job.id">
+              @for (status of applicationStatuses; track status) {
+                <option [value]="status">{{ status }}</option>
+              }
+            </select>
+            <a class="button ghost" [routerLink]="['/jobs', job.id]">Open</a>
+          </div>
+        </article>
+      }
+    </div>
+  }
+</section>

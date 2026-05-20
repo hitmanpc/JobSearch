@@ -1,0 +1,54 @@
+<a class="back-link" routerLink="/">Back to jobs</a>
+
+@if (isLoading()) {
+  <section class="panel empty-state">Loading job...</section>
+} @else if (job(); as currentJob) {
+  <section class="detail-header">
+    <div>
+      <h1 class="page-title">{{ currentJob.title }}</h1>
+      <p class="muted">{{ currentJob.company }}</p>
+    </div>
+    <span class="fit-score">{{ currentJob.fitScore ?? '-' }}</span>
+  </section>
+
+  <section class="panel detail-grid">
+    <div>
+      <span class="label">Location</span>
+      <strong>{{ currentJob.location || 'Location unknown' }}</strong>
+    </div>
+    <div>
+      <span class="label">Remote type</span>
+      <strong>{{ currentJob.remoteType }}</strong>
+    </div>
+    <div>
+      <span class="label">Status</span>
+      <select
+        aria-label="Update status"
+        [ngModel]="currentJob.status"
+        (ngModelChange)="updateStatus($event)">
+        @for (status of applicationStatuses; track status) {
+          <option [value]="status">{{ status }}</option>
+        }
+      </select>
+    </div>
+    <div>
+      <span class="label">Date found</span>
+      <strong>{{ currentJob.dateFound | date: 'mediumDate' }}</strong>
+    </div>
+  </section>
+
+  <section class="panel description">
+    <h2>Description</h2>
+    <p>{{ currentJob.description || 'No description added yet.' }}</p>
+
+    @if (currentJob.url) {
+      <a class="button" [href]="currentJob.url" target="_blank" rel="noreferrer">Open job post</a>
+    }
+  </section>
+} @else {
+  <section class="panel empty-state">Job not found.</section>
+}
+
+@if (errorMessage()) {
+  <p class="error">{{ errorMessage() }}</p>
+}

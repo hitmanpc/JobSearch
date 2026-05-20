@@ -26,8 +26,7 @@ dotnet run --project backend/JobSearch.Api/JobSearch.Api.csproj
 
 The API listens on:
 
-- `http://localhost:5196`
-- `https://localhost:7196`
+- `http://localhost:5000`
 
 Available endpoints:
 
@@ -69,5 +68,38 @@ Content-Type: application/json
 ```powershell
 dotnet test backend/JobSearch.sln
 ```
+
+## Frontend
+
+The initial Angular frontend is under `frontend/job-search-ui/`.
+
+### Prerequisites
+
+- Node.js and npm
+
+### Run Locally
+
+Start the backend first. The frontend is configured to call:
+
+- `http://localhost:5000/api`
+
+From the frontend project folder:
+
+```powershell
+cd frontend/job-search-ui
+npm install
+npm start
+```
+
+The Angular dev server usually listens on:
+
+- `http://localhost:4200`
+
+### Frontend Features
+
+- Job list page with add job form
+- Job detail page
+- Simple application pipeline view
+- `JobOpportunityService` for backend API calls
 
 No authentication, AI integration, or database integration has been added yet.
