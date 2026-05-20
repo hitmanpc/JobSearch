@@ -8,7 +8,12 @@
       <h1 class="page-title">{{ currentJob.title }}</h1>
       <p class="muted">{{ currentJob.company }}</p>
     </div>
-    <span class="fit-score">{{ currentJob.fitScore ?? '-' }}</span>
+    <div class="score-actions">
+      <span class="fit-score">{{ currentJob.fitScore ?? '-' }}</span>
+      <button class="button" type="button" [disabled]="isScoring()" (click)="scoreFit()">
+        {{ isScoring() ? 'Scoring...' : 'Score Fit' }}
+      </button>
+    </div>
   </section>
 
   <section class="panel detail-grid">
@@ -36,6 +41,62 @@
       <strong>{{ currentJob.dateFound | date: 'mediumDate' }}</strong>
     </div>
   </section>
+
+  @if (currentJob.fitScoreResult; as scoreResult) {
+    <section class="panel score-panel">
+      <div class="score-summary">
+        <div>
+          <span class="label">Fit score</span>
+          <strong>{{ scoreResult.fitScore }}</strong>
+        </div>
+        <div>
+          <span class="label">Recommended action</span>
+          <strong>{{ scoreResult.recommendedAction }}</strong>
+        </div>
+      </div>
+
+      <div class="score-lists">
+        <div>
+          <h2>Matching Skills</h2>
+          @if (scoreResult.matchingSkills.length) {
+            <ul>
+              @for (skill of scoreResult.matchingSkills; track skill) {
+                <li>{{ skill }}</li>
+              }
+            </ul>
+          } @else {
+            <p class="muted">No matching skills found.</p>
+          }
+        </div>
+
+        <div>
+          <h2>Missing Skills</h2>
+          @if (scoreResult.missingSkills.length) {
+            <ul>
+              @for (skill of scoreResult.missingSkills; track skill) {
+                <li>{{ skill }}</li>
+              }
+            </ul>
+          } @else {
+            <p class="muted">No missing skills.</p>
+          }
+        </div>
+
+        <div>
+          <h2>Concerns</h2>
+          @if (scoreResult.concerns.length) {
+            <ul>
+              @for (concern of scoreResult.concerns; track concern) {
+                <li>{{ concern }}</li>
+              }
+            </ul>
+          } @else {
+            <p class="muted">No concerns found.</p>
+          }
+        </div>
+      </div>
+    </section>
+  }
 
   <section class="panel description">
     <h2>Description</h2>

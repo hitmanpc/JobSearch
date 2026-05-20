@@ -18,8 +18,17 @@ export interface JobOpportunity {
   description: string | null;
   status: ApplicationStatus;
   fitScore: number | null;
+  fitScoreResult: FitScoreResult | null;
   dateFound: string;
   dateApplied: string | null;
+}
+
+export interface FitScoreResult {
+  fitScore: number;
+  matchingSkills: string[];
+  missingSkills: string[];
+  concerns: string[];
+  recommendedAction: string;
 }
 
 export interface CreateJobOpportunityRequest {

@@ -18,6 +18,7 @@ export class JobDetailComponent implements OnInit {
   protected readonly job = signal<JobOpportunity | null>(null);
   protected readonly applicationStatuses = applicationStatuses;
   protected readonly isLoading = signal(true);
+  protected readonly isScoring = signal(false);
   protected readonly errorMessage = signal<string | null>(null);
 
   ngOnInit(): void {
@@ -51,6 +52,32 @@ export class JobDetailComponent implements OnInit {
     this.jobService.updateStatus(currentJob.id, status as ApplicationStatus).subscribe({
       next: (updatedJob) => this.job.set(updatedJob),
       error: () => this.errorMessage.set('Could not update status.')
+    });
+  }
+
+  protected scoreFit(): void {
+    const currentJob = this.job();
+
+    if (!currentJob) {
+      return;
+    }
+
+    this.isScoring.set(true);
+    this.errorMessage.set(null);
+
+    this.jobService.scoreFit(currentJob.id).subscribe({
+      next: (fitScoreResult) => {
+        this.job.set({
+          ...currentJob,
+          fitScore: fitScoreResult.fitScore,
+          fitScoreResult
+        });
+        this.isScoring.set(false);
+      },
+      error: () => {
+        this.errorMessage.set('Could not score this job.');
+        this.isScoring.set(false);
+      }
     });
   }
 }

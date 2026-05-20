@@ -8,11 +8,16 @@ namespace JobSearch.Application.Services;
 public sealed class JobService : IJobService
 {
     private readonly IJobRepository repository;
+    private readonly IFitScoringService fitScoringService;
     private readonly TimeProvider timeProvider;
 
-    public JobService(IJobRepository repository, TimeProvider timeProvider)
+    public JobService(
+        IJobRepository repository,
+        IFitScoringService fitScoringService,
+        TimeProvider timeProvider)
     {
         this.repository = repository;
+        this.fitScoringService = fitScoringService;
         this.timeProvider = timeProvider;
     }
 
@@ -63,6 +68,22 @@ public sealed class JobService : IJobService
 
         await repository.UpdateAsync(job, cancellationToken);
         return JobOpportunityDto.FromEntity(job);
+    }
+
+    public async Task<FitScoreResultDto?> ScoreFitAsync(Guid id, CancellationToken cancellationToken = default)
+    {
+        var job = await repository.GetByIdAsync(id, cancellationToken);
+        if (job is null)
+        {
+            return null;
+        }
+
+        var scoreResult = await fitScoringService.ScoreAsync(job, cancellationToken);
+        job.FitScore = scoreResult.FitScore;
+        job.FitScoreResult = scoreResult;
+
+        await repository.UpdateAsync(job, cancellationToken);
+        return FitScoreResultDto.FromEntity(scoreResult);
     }
 
     private static void ValidateCreateRequest(CreateJobRequest request)

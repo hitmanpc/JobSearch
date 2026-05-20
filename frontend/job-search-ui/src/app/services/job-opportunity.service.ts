@@ -1,7 +1,7 @@
 import { HttpClient } from '@angular/common/http';
 import { Injectable } from '@angular/core';
 import { Observable } from 'rxjs';
-import { ApplicationStatus, CreateJobOpportunityRequest, JobOpportunity } from '../models/job-opportunity';
+import { ApplicationStatus, CreateJobOpportunityRequest, FitScoreResult, JobOpportunity } from '../models/job-opportunity';
 
 @Injectable({
   providedIn: 'root'
@@ -25,5 +25,9 @@ export class JobOpportunityService {
 
   updateStatus(id: string, status: ApplicationStatus): Observable<JobOpportunity> {
     return this.http.patch<JobOpportunity>(`${this.baseUrl}/${id}/status`, { status });
+  }
+
+  scoreFit(id: string): Observable<FitScoreResult> {
+    return this.http.post<FitScoreResult>(`${this.baseUrl}/${id}/score`, {});
   }
 }

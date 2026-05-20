@@ -13,6 +13,7 @@ public sealed class JobOpportunity
     public string? Description { get; set; }
     public ApplicationStatus Status { get; set; } = ApplicationStatus.Found;
     public int? FitScore { get; set; }
+    public FitScoreResult? FitScoreResult { get; set; }
     public DateTimeOffset DateFound { get; set; } = DateTimeOffset.UtcNow;
     public DateTimeOffset? DateApplied { get; set; }
 }

@@ -54,4 +54,11 @@ public sealed class JobsController : ControllerBase
         var job = await jobService.UpdateStatusAsync(id, request, cancellationToken);
         return job is null ? NotFound() : Ok(job);
     }
+
+    [HttpPost("{id:guid}/score")]
+    public async Task<ActionResult<FitScoreResultDto>> ScoreFit(Guid id, CancellationToken cancellationToken)
+    {
+        var scoreResult = await jobService.ScoreFitAsync(id, cancellationToken);
+        return scoreResult is null ? NotFound() : Ok(scoreResult);
+    }
 }

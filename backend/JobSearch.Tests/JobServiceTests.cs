@@ -65,8 +65,33 @@ public sealed class JobServiceTests
         Assert.Contains(jobs, job => job.Company == "Contoso");
     }
 
+    [Fact]
+    public async Task ScoreFitAsync_StoresScoreResultOnJob()
+    {
+        var service = CreateService();
+        var job = await service.CreateJobAsync(new CreateJobRequest(
+            "Acme",
+            "Senior Angular Engineer",
+            null,
+            RemoteType.Remote,
+            null,
+            "Build Angular, .NET, Docker, CI/CD, SQL, and MongoDB systems.",
+            null));
+
+        var scoreResult = await service.ScoreFitAsync(job.Id);
+        var updatedJob = await service.GetJobAsync(job.Id);
+
+        Assert.NotNull(scoreResult);
+        Assert.NotNull(updatedJob);
+        Assert.Equal(scoreResult.FitScore, updatedJob.FitScore);
+        Assert.NotNull(updatedJob.FitScoreResult);
+        Assert.Equal(scoreResult.FitScore, updatedJob.FitScoreResult.FitScore);
+        Assert.Contains("Angular", updatedJob.FitScoreResult.MatchingSkills);
+        Assert.Contains("React", updatedJob.FitScoreResult.MissingSkills);
+    }
+
     private static JobService CreateService()
     {
-        return new JobService(new InMemoryJobRepository(), TimeProvider.System);
+        return new JobService(new InMemoryJobRepository(), new MockFitScoringService(), TimeProvider.System);
     }
 }

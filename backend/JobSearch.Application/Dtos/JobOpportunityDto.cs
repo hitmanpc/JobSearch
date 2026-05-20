@@ -13,6 +13,7 @@ public sealed record JobOpportunityDto(
     string? Description,
     ApplicationStatus Status,
     int? FitScore,
+    FitScoreResultDto? FitScoreResult,
     DateTimeOffset DateFound,
     DateTimeOffset? DateApplied)
 {
@@ -27,6 +28,7 @@ public sealed record JobOpportunityDto(
             job.Description,
             job.Status,
             job.FitScore,
+            job.FitScoreResult is null ? null : FitScoreResultDto.FromEntity(job.FitScoreResult),
             job.DateFound,
             job.DateApplied);
 }

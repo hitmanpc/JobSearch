@@ -23,6 +23,7 @@ builder.Services.AddCors(options =>
 });
 builder.Services.AddSingleton(TimeProvider.System);
 builder.Services.AddSingleton<IJobRepository, InMemoryJobRepository>();
+builder.Services.AddScoped<IFitScoringService, MockFitScoringService>();
 builder.Services.AddScoped<IJobService, JobService>();
 
 var app = builder.Build();
