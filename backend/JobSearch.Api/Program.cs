@@ -23,7 +23,25 @@ builder.Services.AddCors(options =>
 });
 builder.Services.AddSingleton(TimeProvider.System);
 builder.Services.AddSingleton<IJobRepository, InMemoryJobRepository>();
-builder.Services.AddScoped<IFitScoringService, MockFitScoringService>();
+builder.Services.AddScoped<MockFitScoringService>();
+builder.Services.AddHttpClient();
+builder.Services.AddScoped<IFitScoringService>(serviceProvider =>
+{
+    var configuration = serviceProvider.GetRequiredService<IConfiguration>();
+    var provider = configuration["FitScoringProvider"] ?? "Mock";
+
+    if (provider.Equals("Mock", StringComparison.OrdinalIgnoreCase))
+    {
+        return serviceProvider.GetRequiredService<MockFitScoringService>();
+    }
+
+    if (provider.Equals("OpenAI", StringComparison.OrdinalIgnoreCase))
+    {
+        return CreateOpenAiFitScoringService(serviceProvider, configuration);
+    }
+
+    throw new InvalidOperationException("FitScoringProvider must be either Mock or OpenAI.");
+});
 builder.Services.AddScoped<IJobService, JobService>();
 
 var app = builder.Build();
@@ -33,3 +51,20 @@ app.UseCors(FrontendCorsPolicy);
 app.MapControllers();
 
 app.Run();
+
+static OpenAiFitScoringService CreateOpenAiFitScoringService(
+    IServiceProvider serviceProvider,
+    IConfiguration configuration)
+{
+    var apiKey = configuration["OPENAI_API_KEY"];
+    if (string.IsNullOrWhiteSpace(apiKey))
+    {
+        throw new InvalidOperationException("OPENAI_API_KEY is required when FitScoringProvider is OpenAI.");
+    }
+
+    var httpClientFactory = serviceProvider.GetRequiredService<IHttpClientFactory>();
+    var httpClient = httpClientFactory.CreateClient();
+    var model = configuration["OpenAI:FitScoringModel"];
+
+    return new OpenAiFitScoringService(httpClient, apiKey, model);
+}

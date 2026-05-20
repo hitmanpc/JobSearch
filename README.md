@@ -34,6 +34,32 @@ Available endpoints:
 - `GET /api/jobs/{id}`
 - `POST /api/jobs`
 - `PATCH /api/jobs/{id}/status`
+- `POST /api/jobs/{id}/score`
+
+### Fit Scoring Configuration
+
+Fit scoring uses the mock provider by default for local development.
+
+Supported configuration values:
+
+- `FitScoringProvider=Mock` - uses deterministic local scoring
+- `FitScoringProvider=OpenAI` - uses the OpenAI-backed scoring service
+
+Required environment variables when using OpenAI:
+
+- `OPENAI_API_KEY` - OpenAI API key used by the backend
+
+Optional environment variables:
+
+- `OpenAI__FitScoringModel` - overrides the default fit scoring model
+
+PowerShell example:
+
+```powershell
+$env:FitScoringProvider = "OpenAI"
+$env:OPENAI_API_KEY = "<your-api-key>"
+dotnet run --project backend/JobSearch.Api/JobSearch.Api.csproj
+```
 
 Example create request:
 
