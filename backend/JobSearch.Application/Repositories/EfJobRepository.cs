@@ -9,6 +9,12 @@ public sealed class EfJobRepository(AppDbContext dbContext) : IJobRepository
 {
     public async Task<IReadOnlyCollection<JobOpportunity>> GetAllAsync(CancellationToken cancellationToken = default)
     {
+        if (dbContext.Database.ProviderName == "Microsoft.EntityFrameworkCore.Sqlite")
+        {
+            var all = await dbContext.Jobs.AsNoTracking().ToArrayAsync(cancellationToken);
+            return all.OrderByDescending(x => x.DateFound).ToArray();
+        }
+
         return await dbContext.Jobs.AsNoTracking()
             .OrderByDescending(x => x.DateFound)
             .ToArrayAsync(cancellationToken);

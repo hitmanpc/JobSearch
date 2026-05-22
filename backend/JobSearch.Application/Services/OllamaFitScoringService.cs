@@ -73,7 +73,8 @@ public sealed class OllamaFitScoringService : IFitScoringService
 
         var responseJson = await response.Content.ReadAsStringAsync(cancellationToken);
         var content = ExtractContent(responseJson);
-        var result = JsonSerializer.Deserialize<FitScoreResult>(content, JsonOptions);
+        var jsonObject = ExtractJsonObject(content);
+        var result = JsonSerializer.Deserialize<FitScoreResult>(jsonObject, JsonOptions);
 
         if (result is null || !IsValidResult(result))
         {
@@ -116,5 +117,34 @@ public sealed class OllamaFitScoringService : IFitScoringService
         }
 
         throw new InvalidOperationException("Ollama fit scoring response did not contain expected content.");
+    }
+
+    private static string ExtractJsonObject(string text)
+    {
+        var start = text.IndexOf('{');
+        if (start < 0)
+            return text;
+
+        var depth = 0;
+        var inString = false;
+        var escape = false;
+
+        for (var i = start; i < text.Length; i++)
+        {
+            var c = text[i];
+            if (escape) { escape = false; continue; }
+            if (c == '\\' && inString) { escape = true; continue; }
+            if (c == '"') { inString = !inString; continue; }
+            if (inString) continue;
+            if (c == '{') depth++;
+            else if (c == '}')
+            {
+                depth--;
+                if (depth == 0)
+                    return text[start..(i + 1)];
+            }
+        }
+
+        return text[start..];
     }
 }
