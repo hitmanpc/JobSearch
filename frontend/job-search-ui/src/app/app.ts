@@ -8,5 +8,5 @@ import { RouterLink, RouterLinkActive, RouterOutlet } from '@angular/router';
   styleUrl: './app.css'
 })
 export class AppComponent {
-  protected readonly appName = 'Job Search Command Center';
+  protected readonly appName = 'Job Search War Room';
 }
