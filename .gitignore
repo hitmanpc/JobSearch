@@ -52,6 +52,8 @@ pnpm-debug.log*
 !.env.example
 appsettings.Development.local.json
 appsettings.*.local.json
+*.db
+*.db-*
 
 # OS files
 .DS_Store

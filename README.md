@@ -15,6 +15,73 @@ The initial backend skeleton is under `backend/`:
 
 - .NET 10 SDK
 
+## Docker Local Development
+
+The repository includes a local Docker setup for the API, Angular dev server, SQLite persistence, optional PostgreSQL, and host-based Ollama.
+
+### Start the default stack
+
+```powershell
+docker-compose up -d --build
+```
+
+Default services:
+
+- Frontend: `http://localhost:4200`
+- API: `http://localhost:5000`
+- Database: SQLite stored in the `jobsearch-sqlite` Docker volume
+- Fit scoring: `Mock`
+
+Stop the stack:
+
+```powershell
+docker-compose down
+```
+
+### Docker with host Ollama
+
+Run Ollama on the Windows host, pull the recommended model for this machine, then start the API with Ollama enabled.
+
+Create a `.env` file in the repository root (do not commit it):
+
+```env
+FIT_SCORING_PROVIDER=Ollama
+OLLAMA_BASE_URL=http://host.docker.internal:11434/v1
+OLLAMA_MODEL=qwen2.5:14b
+```
+
+Then pull the model and start the stack:
+
+```powershell
+ollama pull qwen2.5:14b
+docker-compose up -d --build api frontend
+```
+
+This machine was detected with an NVIDIA RTX 3080 Ti and 12 GB VRAM. Recommended local model: `qwen2.5:14b`; fallback: `llama3.1:8b` if latency or VRAM pressure becomes annoying.
+
+### Docker with PostgreSQL
+
+SQLite remains the default. To test PostgreSQL locally, create or update a `.env` file in the repository root (do not commit it):
+
+```env
+DATABASE_PROVIDER=Postgres
+DEFAULT_CONNECTION=Host=postgres;Port=5432;Database=jobsearch;Username=jobsearch;Password=jobsearch
+```
+
+Then start the stack:
+
+```powershell
+docker-compose --profile postgres up -d postgres
+# wait a few seconds for Postgres to be ready
+docker-compose --profile postgres up -d --build api frontend
+```
+
+PostgreSQL data is stored in the `jobsearch-postgres` Docker volume. To return to SQLite defaults, remove the `DATABASE_PROVIDER` and `DEFAULT_CONNECTION` entries from `.env` and run:
+
+```powershell
+docker-compose up -d --force-recreate api frontend
+```
+
 ### Run Locally
 
 From the repository root:
@@ -37,48 +104,75 @@ Available endpoints:
 - `POST /api/jobs/{id}/score`
 
 
-### Database (SQLite)
+### Database Configuration
 
-The backend uses EF Core with SQLite and automatically applies migrations at startup.
+The backend uses EF Core and automatically applies migrations at startup. The active provider is controlled by `Database:Provider` in `appsettings.json`.
+
+Supported values:
+
+- `Sqlite` - default local provider
+- `Postgres` - optional local/production-like provider
 
 - Default database file: `backend/JobSearch.Api/jobsearch.db`
-- Override with connection string environment variable:
+- Docker SQLite database file: `/data/jobsearch.db` inside the API container
 
-```powershell
-$env:ConnectionStrings__DefaultConnection = "Data Source=/custom/path/jobsearch.db"
-dotnet run --project backend/JobSearch.Api/JobSearch.Api.csproj
+To change the provider or connection string for a local run, edit `backend/JobSearch.Api/appsettings.json`:
+
+```json
+{
+  "Database": {
+    "Provider": "Sqlite"
+  },
+  "ConnectionStrings": {
+    "DefaultConnection": "Data Source=jobsearch.db"
+  }
+}
+```
+
+PostgreSQL example:
+
+```json
+{
+  "Database": {
+    "Provider": "Postgres"
+  },
+  "ConnectionStrings": {
+    "DefaultConnection": "Host=localhost;Port=5432;Database=jobsearch;Username=jobsearch;Password=jobsearch"
+  }
+}
 ```
 
 ### Fit Scoring Configuration
 
-The active provider is controlled by the `FitScoringProvider` key. Configuration is resolved in this order (later sources win):
-
-1. Code fallback — `"Mock"` if nothing else is set
-2. `appsettings.json` — committed local-development default (`"Mock"`)
-3. Environment variables — override `appsettings.json` at runtime
-
-A fresh local run should work without Ollama or other external AI dependencies.
+The active provider is controlled by the `FitScoringProvider` key in `appsettings.json`. A fresh local run works without Ollama or other external AI dependencies.
 
 Supported values:
 
 - `Mock` — deterministic local scoring, no dependencies
-- `OpenAI` — OpenAI-backed scoring (requires `OPENAI_API_KEY`)
+- `OpenAI` — OpenAI-backed scoring (requires an API key)
 - `Ollama` — locally running Ollama model (see [Local AI with Ollama](#local-ai-with-ollama))
 
-To switch providers without editing `appsettings.json`, set the env var at runtime:
+To switch providers, edit `backend/JobSearch.Api/appsettings.json`:
 
-```powershell
-# Run with mock scoring
-$env:FitScoringProvider = "Mock"
-
-# Run with OpenAI
-$env:FitScoringProvider = "OpenAI"
-$env:OPENAI_API_KEY = "<your-api-key>"
+```json
+{
+  "FitScoringProvider": "Mock"
+}
 ```
 
-Optional OpenAI environment variable:
+OpenAI example:
 
-- `OpenAI__FitScoringModel` — overrides the default model (`gpt-4o-mini`)
+```json
+{
+  "FitScoringProvider": "OpenAI",
+  "OpenAI": {
+    "ApiKey": "<your-api-key>",
+    "FitScoringModel": "gpt-4o-mini"
+  }
+}
+```
+
+`FitScoringModel` is optional and defaults to `gpt-4o-mini`.
 
 ### Local AI with Ollama
 
@@ -102,24 +196,30 @@ Recommended models by available VRAM:
 | Apple M-series | `llama3.1:8b` or larger (unified memory) |
 
 ```bash
-ollama pull llama3.1:8b
+ollama pull qwen2.5:14b
 ```
 
 **3. Start the backend**
 
-`appsettings.json` defaults `FitScoringProvider` to `"Ollama"`, `Ollama:BaseUrl` to `http://localhost:11434/v1`, and `Ollama:Model` to `llama3.1:8b`. No environment variables are needed — just run:
+`appsettings.json` keeps `FitScoringProvider` set to `"Mock"` so a fresh run works without external AI dependencies. To use Ollama locally, edit `backend/JobSearch.Api/appsettings.json`:
+
+```json
+{
+  "FitScoringProvider": "Ollama",
+  "Ollama": {
+    "BaseUrl": "http://localhost:11434/v1",
+    "Model": "qwen2.5:14b"
+  }
+}
+```
+
+Then run as normal:
 
 ```powershell
 dotnet run --project backend/JobSearch.Api/JobSearch.Api.csproj
 ```
 
-To use a different model or URL without editing `appsettings.json`, override via env vars (double underscore = .NET section separator):
-
-```powershell
-$env:Ollama__Model = "qwen2.5:14b"
-$env:Ollama__BaseUrl = "http://localhost:11434/v1"
-dotnet run --project backend/JobSearch.Api/JobSearch.Api.csproj
-```
+For the Docker API container, use a `.env` file in the repository root so the container can reach Ollama running on the host (see [Docker with host Ollama](#docker-with-host-ollama)).
 
 Example create request:
 
@@ -188,4 +288,4 @@ The Angular dev server usually listens on:
 - Simple application pipeline view
 - `JobOpportunityService` for backend API calls
 
-No authentication has been added yet. AI integration is optional via OpenAI configuration, and local SQLite persistence is enabled for backend job data.
+No authentication has been added yet. AI integration is optional via Mock, Ollama, or OpenAI configuration, and local SQLite persistence is enabled for backend job data.

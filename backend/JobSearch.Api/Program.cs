@@ -4,6 +4,7 @@ using System.Text.Json.Serialization;
 using JobSearch.Application.Abstractions;
 using JobSearch.Application.Repositories;
 using JobSearch.Application.Services;
+using Microsoft.EntityFrameworkCore.Diagnostics;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -25,7 +26,33 @@ builder.Services.AddCors(options =>
 });
 builder.Services.AddSingleton(TimeProvider.System);
 builder.Services.AddDbContext<AppDbContext>(options =>
-    options.UseSqlite(builder.Configuration.GetConnectionString("DefaultConnection") ?? "Data Source=jobsearch.db"));
+{
+    var databaseProvider = builder.Configuration["Database:Provider"] ?? "Sqlite";
+    var connectionString = builder.Configuration.GetConnectionString("DefaultConnection");
+
+    if (databaseProvider.Equals("Sqlite", StringComparison.OrdinalIgnoreCase))
+    {
+        options.UseSqlite(string.IsNullOrWhiteSpace(connectionString)
+            ? "Data Source=jobsearch.db"
+            : connectionString);
+
+        return;
+    }
+
+    if (databaseProvider.Equals("Postgres", StringComparison.OrdinalIgnoreCase))
+    {
+        if (string.IsNullOrWhiteSpace(connectionString))
+        {
+            throw new InvalidOperationException("ConnectionStrings:DefaultConnection is required when Database:Provider is Postgres.");
+        }
+
+        options.UseNpgsql(connectionString)
+            .ConfigureWarnings(warnings => warnings.Ignore(RelationalEventId.PendingModelChangesWarning));
+        return;
+    }
+
+    throw new InvalidOperationException("Database:Provider must be Sqlite or Postgres.");
+});
 
 builder.Services.AddScoped<IJobRepository, EfJobRepository>();
 builder.Services.AddScoped<MockFitScoringService>();
