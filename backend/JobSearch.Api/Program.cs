@@ -28,7 +28,7 @@ builder.Services.AddHttpClient();
 builder.Services.AddScoped<IFitScoringService>(serviceProvider =>
 {
     var configuration = serviceProvider.GetRequiredService<IConfiguration>();
-    var provider = configuration["FitScoringProvider"] ?? "Mock";
+    var provider = configuration["FitScoringProvider"] ?? "Mock"; // default also set in appsettings.json
 
     if (provider.Equals("Mock", StringComparison.OrdinalIgnoreCase))
     {
@@ -40,7 +40,12 @@ builder.Services.AddScoped<IFitScoringService>(serviceProvider =>
         return CreateOpenAiFitScoringService(serviceProvider, configuration);
     }
 
-    throw new InvalidOperationException("FitScoringProvider must be either Mock or OpenAI.");
+    if (provider.Equals("Ollama", StringComparison.OrdinalIgnoreCase))
+    {
+        return CreateOllamaFitScoringService(serviceProvider, configuration);
+    }
+
+    throw new InvalidOperationException("FitScoringProvider must be Mock, OpenAI, or Ollama.");
 });
 builder.Services.AddScoped<IJobService, JobService>();
 
@@ -67,4 +72,26 @@ static OpenAiFitScoringService CreateOpenAiFitScoringService(
     var model = configuration["OpenAI:FitScoringModel"];
 
     return new OpenAiFitScoringService(httpClient, apiKey, model);
+}
+
+static OllamaFitScoringService CreateOllamaFitScoringService(
+    IServiceProvider serviceProvider,
+    IConfiguration configuration)
+{
+    var baseUrl = configuration["Ollama:BaseUrl"];
+    if (string.IsNullOrWhiteSpace(baseUrl))
+    {
+        throw new InvalidOperationException("Ollama:BaseUrl is required when FitScoringProvider is Ollama.");
+    }
+
+    var model = configuration["Ollama:Model"];
+    if (string.IsNullOrWhiteSpace(model))
+    {
+        throw new InvalidOperationException("Ollama:Model is required when FitScoringProvider is Ollama.");
+    }
+
+    var httpClientFactory = serviceProvider.GetRequiredService<IHttpClientFactory>();
+    var httpClient = httpClientFactory.CreateClient();
+
+    return new OllamaFitScoringService(httpClient, baseUrl, model);
 }
