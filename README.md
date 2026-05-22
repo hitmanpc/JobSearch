@@ -41,8 +41,10 @@ Available endpoints:
 The active provider is controlled by the `FitScoringProvider` key. Configuration is resolved in this order (later sources win):
 
 1. Code fallback — `"Mock"` if nothing else is set
-2. `appsettings.json` — committed defaults (currently `"Ollama"`)
+2. `appsettings.json` — committed local-development default (`"Mock"`)
 3. Environment variables — override `appsettings.json` at runtime
+
+A fresh local run should work without Ollama or other external AI dependencies.
 
 Supported values:
 
