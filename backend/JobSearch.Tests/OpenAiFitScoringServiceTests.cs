@@ -41,11 +41,21 @@ public sealed class OpenAiFitScoringServiceTests
     [Fact]
     public async Task ScoreAsync_ThrowsNonSensitiveErrorWhenOpenAiFails()
     {
-        using var httpClient = new HttpClient(new StubHttpMessageHandler(HttpStatusCode.InternalServerError, "{}"));
+        var errorResponse = """
+            {
+              "error": {
+                "message": "The requested model is not available for your organization.",
+                "type": "invalid_request_error"
+              }
+            }
+            """;
+        using var httpClient = new HttpClient(new StubHttpMessageHandler(HttpStatusCode.BadRequest, errorResponse));
         var service = new OpenAiFitScoringService(httpClient, "test-key");
 
         var exception = await Assert.ThrowsAsync<InvalidOperationException>(() => service.ScoreAsync(CreateJob()));
 
+        Assert.Contains("OpenAI fit scoring request failed (400 Bad Request)", exception.Message);
+        Assert.Contains("requested model is not available", exception.Message);
         Assert.DoesNotContain("test-key", exception.Message);
         Assert.DoesNotContain("Build Angular", exception.Message);
     }
