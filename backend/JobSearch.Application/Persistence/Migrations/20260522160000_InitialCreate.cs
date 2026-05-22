@@ -17,7 +17,7 @@ public partial class InitialCreate : Migration
         if (isPostgres)
         {
             migrationBuilder.Sql("""
-                CREATE TABLE IF NOT EXISTS "Jobs" (
+                CREATE TABLE "Jobs" (
                     "Id" uuid NOT NULL,
                     "Company" text NOT NULL,
                     "Title" text NOT NULL,
