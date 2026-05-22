@@ -55,8 +55,8 @@ Ollama exposes an OpenAI-compatible API at `http://localhost:11434/v1`. The exis
 
 **Environment variables to document and set:**
 - `FitScoringProvider=Ollama`
-- `OLLAMA_BASE_URL=http://localhost:11434/v1`
-- `OLLAMA_MODEL=llama3.1:8b` (or whichever model was recommended)
+- `Ollama__BaseUrl=http://localhost:11434/v1` (defaults to this in appsettings.json; double underscore is the .NET section separator)
+- `Ollama__Model=llama3.1:8b` (defaults to `llama3.1:8b` in appsettings.json)
 
 Update `Program.cs` service registration to handle the `Ollama` provider case alongside the existing `Mock` and `OpenAI` cases.
 

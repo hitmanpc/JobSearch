@@ -38,29 +38,32 @@ Available endpoints:
 
 ### Fit Scoring Configuration
 
-Fit scoring uses the mock provider by default for local development.
+The active provider is controlled by the `FitScoringProvider` key. Configuration is resolved in this order (later sources win):
 
-Supported configuration values:
+1. Code fallback — `"Mock"` if nothing else is set
+2. `appsettings.json` — committed defaults (currently `"Ollama"`)
+3. Environment variables — override `appsettings.json` at runtime
 
-- `FitScoringProvider=Mock` - uses deterministic local scoring
-- `FitScoringProvider=OpenAI` - uses the OpenAI-backed scoring service
-- `FitScoringProvider=Ollama` - uses a locally running Ollama model
+Supported values:
 
-Required environment variables when using OpenAI:
+- `Mock` — deterministic local scoring, no dependencies
+- `OpenAI` — OpenAI-backed scoring (requires `OPENAI_API_KEY`)
+- `Ollama` — locally running Ollama model (see [Local AI with Ollama](#local-ai-with-ollama))
 
-- `OPENAI_API_KEY` - OpenAI API key used by the backend
-
-Optional environment variables:
-
-- `OpenAI__FitScoringModel` - overrides the default fit scoring model
-
-PowerShell example:
+To switch providers without editing `appsettings.json`, set the env var at runtime:
 
 ```powershell
+# Run with mock scoring
+$env:FitScoringProvider = "Mock"
+
+# Run with OpenAI
 $env:FitScoringProvider = "OpenAI"
 $env:OPENAI_API_KEY = "<your-api-key>"
-dotnet run --project backend/JobSearch.Api/JobSearch.Api.csproj
 ```
+
+Optional OpenAI environment variable:
+
+- `OpenAI__FitScoringModel` — overrides the default model (`gpt-4o-mini`)
 
 ### Local AI with Ollama
 
@@ -87,12 +90,19 @@ Recommended models by available VRAM:
 ollama pull llama3.1:8b
 ```
 
-**3. Start the backend with Ollama**
+**3. Start the backend**
+
+`appsettings.json` defaults `FitScoringProvider` to `"Ollama"`, `Ollama:BaseUrl` to `http://localhost:11434/v1`, and `Ollama:Model` to `llama3.1:8b`. No environment variables are needed — just run:
 
 ```powershell
-$env:FitScoringProvider = "Ollama"
-$env:OLLAMA_BASE_URL = "http://localhost:11434/v1"
-$env:OLLAMA_MODEL = "llama3.1:8b"
+dotnet run --project backend/JobSearch.Api/JobSearch.Api.csproj
+```
+
+To use a different model or URL without editing `appsettings.json`, override via env vars (double underscore = .NET section separator):
+
+```powershell
+$env:Ollama__Model = "qwen2.5:14b"
+$env:Ollama__BaseUrl = "http://localhost:11434/v1"
 dotnet run --project backend/JobSearch.Api/JobSearch.Api.csproj
 ```
 
