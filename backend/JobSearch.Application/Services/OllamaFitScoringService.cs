@@ -75,12 +75,25 @@ public sealed class OllamaFitScoringService : IFitScoringService
         var content = ExtractContent(responseJson);
         var result = JsonSerializer.Deserialize<FitScoreResult>(content, JsonOptions);
 
-        if (result is null || string.IsNullOrWhiteSpace(result.RecommendedAction))
+        if (result is null || !IsValidResult(result))
         {
-            throw new InvalidOperationException("Ollama fit scoring returned an invalid result.");
+            throw new InvalidOperationException(
+                "Ollama fit scoring returned an invalid result. Expected fitScore between 0 and 100, non-null matchingSkills/missingSkills/concerns arrays, and recommendedAction to be one of: Apply, Review before applying, Deprioritize.");
         }
 
         return result;
+    }
+
+    private static bool IsValidResult(FitScoreResult result)
+    {
+        return result.FitScore >= 0 &&
+            result.FitScore <= 100 &&
+            result.MatchingSkills is not null &&
+            result.MissingSkills is not null &&
+            result.Concerns is not null &&
+            (string.Equals(result.RecommendedAction, "Apply", StringComparison.Ordinal) ||
+             string.Equals(result.RecommendedAction, "Review before applying", StringComparison.Ordinal) ||
+             string.Equals(result.RecommendedAction, "Deprioritize", StringComparison.Ordinal));
     }
 
     private static string ExtractContent(string responseJson)
