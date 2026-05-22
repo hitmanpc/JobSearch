@@ -104,7 +104,7 @@ public sealed class JobService : IJobService
 
         var skillsText = matchingSkills.Length > 0
             ? string.Join(", ", matchingSkills)
-            : "modern full-stack development, cloud architecture, and API design";
+            : "Angular, .NET, cloud architecture, and API design";
 
         var message =
             $"Hi there,\n\n" +
@@ -114,6 +114,9 @@ public sealed class JobService : IJobService
             "You can review my portfolio at donbowman.info. " +
             "If helpful, I'd love to connect and briefly discuss how I could contribute.\n\n" +
             "Best regards,";
+
+        job.GeneratedRecruiterMessage = message;
+        await repository.UpdateAsync(job, cancellationToken);
 
         return new GeneratedRecruiterMessageDto(message);
     }

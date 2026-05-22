@@ -1,3 +1,5 @@
+using JobSearch.Application.Persistence;
+using Microsoft.EntityFrameworkCore;
 using System.Text.Json.Serialization;
 using JobSearch.Application.Abstractions;
 using JobSearch.Application.Repositories;
@@ -22,7 +24,10 @@ builder.Services.AddCors(options =>
     });
 });
 builder.Services.AddSingleton(TimeProvider.System);
-builder.Services.AddSingleton<IJobRepository, InMemoryJobRepository>();
+builder.Services.AddDbContext<AppDbContext>(options =>
+    options.UseSqlite(builder.Configuration.GetConnectionString("DefaultConnection") ?? "Data Source=jobsearch.db"));
+
+builder.Services.AddScoped<IJobRepository, EfJobRepository>();
 builder.Services.AddScoped<MockFitScoringService>();
 builder.Services.AddHttpClient();
 builder.Services.AddScoped<IFitScoringService>(serviceProvider =>
@@ -45,6 +50,12 @@ builder.Services.AddScoped<IFitScoringService>(serviceProvider =>
 builder.Services.AddScoped<IJobService, JobService>();
 
 var app = builder.Build();
+
+using (var scope = app.Services.CreateScope())
+{
+    var dbContext = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+    dbContext.Database.Migrate();
+}
 
 app.UseHttpsRedirection();
 app.UseCors(FrontendCorsPolicy);

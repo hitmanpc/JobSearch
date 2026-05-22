@@ -8,7 +8,7 @@ The initial backend skeleton is under `backend/`:
 
 - `JobSearch.Api` - .NET 10 Web API
 - `JobSearch.Domain` - domain entities and enums
-- `JobSearch.Application` - DTOs, service logic, and in-memory repository
+- `JobSearch.Application` - DTOs, service logic, and EF Core persistence services
 - `JobSearch.Tests` - xUnit tests for basic job workflows
 
 ### Prerequisites
@@ -35,6 +35,19 @@ Available endpoints:
 - `POST /api/jobs`
 - `PATCH /api/jobs/{id}/status`
 - `POST /api/jobs/{id}/score`
+
+
+### Database (SQLite)
+
+The backend uses EF Core with SQLite and automatically applies migrations at startup.
+
+- Default database file: `backend/JobSearch.Api/jobsearch.db`
+- Override with connection string environment variable:
+
+```powershell
+$env:ConnectionStrings__DefaultConnection = "Data Source=/custom/path/jobsearch.db"
+dotnet run --project backend/JobSearch.Api/JobSearch.Api.csproj
+```
 
 ### Fit Scoring Configuration
 
@@ -128,4 +141,4 @@ The Angular dev server usually listens on:
 - Simple application pipeline view
 - `JobOpportunityService` for backend API calls
 
-No authentication, AI integration, or database integration has been added yet.
+No authentication has been added yet. AI integration is optional via OpenAI configuration, and local SQLite persistence is enabled for backend job data.
