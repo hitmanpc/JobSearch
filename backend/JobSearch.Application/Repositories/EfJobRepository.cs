@@ -9,8 +9,9 @@ public sealed class EfJobRepository(AppDbContext dbContext) : IJobRepository
 {
     public async Task<IReadOnlyCollection<JobOpportunity>> GetAllAsync(CancellationToken cancellationToken = default)
     {
-        var jobs = await dbContext.Jobs.AsNoTracking().ToArrayAsync(cancellationToken);
-        return jobs.OrderByDescending(x => x.DateFound).ToArray();
+        return await dbContext.Jobs.AsNoTracking()
+            .OrderByDescending(x => x.DateFound)
+            .ToArrayAsync(cancellationToken);
     }
 
     public async Task<JobOpportunity?> GetByIdAsync(Guid id, CancellationToken cancellationToken = default)
