@@ -44,6 +44,7 @@ Supported configuration values:
 
 - `FitScoringProvider=Mock` - uses deterministic local scoring
 - `FitScoringProvider=OpenAI` - uses the OpenAI-backed scoring service
+- `FitScoringProvider=Ollama` - uses a locally running Ollama model
 
 Required environment variables when using OpenAI:
 
@@ -58,6 +59,40 @@ PowerShell example:
 ```powershell
 $env:FitScoringProvider = "OpenAI"
 $env:OPENAI_API_KEY = "<your-api-key>"
+dotnet run --project backend/JobSearch.Api/JobSearch.Api.csproj
+```
+
+### Local AI with Ollama
+
+Ollama lets you run models locally without an API key. It exposes an OpenAI-compatible API at `http://localhost:11434/v1`.
+
+**1. Install Ollama**
+
+Download from [ollama.com](https://ollama.com) and follow the installer for your OS.
+
+**2. Choose and pull a model**
+
+Recommended models by available VRAM:
+
+| VRAM           | Recommended model                        |
+|----------------|------------------------------------------|
+| < 4 GB         | `phi3:mini`                              |
+| 4–6 GB         | `llama3.2:3b` or `mistral:7b-q4`         |
+| 8 GB           | `llama3.1:8b` or `mistral:7b`            |
+| 12–16 GB       | `llama3.1:13b` or `qwen2.5:14b`          |
+| 24 GB+         | `qwen2.5:32b` or `llama3.1:70b-q4`       |
+| Apple M-series | `llama3.1:8b` or larger (unified memory) |
+
+```bash
+ollama pull llama3.1:8b
+```
+
+**3. Start the backend with Ollama**
+
+```powershell
+$env:FitScoringProvider = "Ollama"
+$env:OLLAMA_BASE_URL = "http://localhost:11434/v1"
+$env:OLLAMA_MODEL = "llama3.1:8b"
 dotnet run --project backend/JobSearch.Api/JobSearch.Api.csproj
 ```
 
