@@ -16,14 +16,14 @@ public sealed class AppDbContext(DbContextOptions<AppDbContext> options) : DbCon
             value => JsonSerializer.Serialize(value, (JsonSerializerOptions?)null),
             value => JsonSerializer.Deserialize<string[]>(value, (JsonSerializerOptions?)null) ?? Array.Empty<string>());
         var listComparer = new ValueComparer<IReadOnlyCollection<string>>(
-            (left, right) => left is null && right is null ||
-                left is not null && right is not null && left.SequenceEqual(right),
-            value => value is null
+            (left, right) => (left == null && right == null) ||
+                (left != null && right != null && left.SequenceEqual(right)),
+            value => value == null
                 ? 0
                 : value.Aggregate(
                     0,
-                    (hash, item) => HashCode.Combine(hash, item is null ? 0 : StringComparer.Ordinal.GetHashCode(item))),
-            value => value?.ToArray() ?? Array.Empty<string>());
+                    (hash, item) => HashCode.Combine(hash, item == null ? 0 : StringComparer.Ordinal.GetHashCode(item))),
+            value => value == null ? Array.Empty<string>() : value.ToArray());
 
         modelBuilder.Entity<JobOpportunity>(entity =>
         {
