@@ -20,6 +20,8 @@ export class JobDetailComponent implements OnInit {
   protected readonly isLoading = signal(true);
   protected readonly isScoring = signal(false);
   protected readonly errorMessage = signal<string | null>(null);
+  protected readonly generatedMessage = signal('');
+  protected readonly isGeneratingMessage = signal(false);
 
   ngOnInit(): void {
     const id = this.route.snapshot.paramMap.get('id');
@@ -78,6 +80,38 @@ export class JobDetailComponent implements OnInit {
         this.errorMessage.set('Could not score this job.');
         this.isScoring.set(false);
       }
+    });
+  }
+
+  protected generateMessage(): void {
+    const currentJob = this.job();
+    if (!currentJob) {
+      return;
+    }
+
+    this.isGeneratingMessage.set(true);
+    this.errorMessage.set(null);
+
+    this.jobService.generateMessage(currentJob.id).subscribe({
+      next: (response) => {
+        this.generatedMessage.set(response.message);
+        this.isGeneratingMessage.set(false);
+      },
+      error: () => {
+        this.errorMessage.set('Could not generate recruiter message.');
+        this.isGeneratingMessage.set(false);
+      }
+    });
+  }
+
+  protected copyGeneratedMessage(): void {
+    const message = this.generatedMessage().trim();
+    if (!message) {
+      return;
+    }
+
+    navigator.clipboard.writeText(message).catch(() => {
+      this.errorMessage.set('Could not copy the generated message.');
     });
   }
 }

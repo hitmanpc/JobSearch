@@ -9,4 +9,5 @@ public interface IJobService
     Task<JobOpportunityDto> CreateJobAsync(CreateJobRequest request, CancellationToken cancellationToken = default);
     Task<JobOpportunityDto?> UpdateStatusAsync(Guid id, UpdateJobStatusRequest request, CancellationToken cancellationToken = default);
     Task<FitScoreResultDto?> ScoreFitAsync(Guid id, CancellationToken cancellationToken = default);
+    Task<GeneratedRecruiterMessageDto?> GenerateRecruiterMessageAsync(Guid id, CancellationToken cancellationToken = default);
 }

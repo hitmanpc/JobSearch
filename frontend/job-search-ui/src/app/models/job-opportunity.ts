@@ -31,6 +31,10 @@ export interface FitScoreResult {
   recommendedAction: string;
 }
 
+export interface GeneratedRecruiterMessage {
+  message: string;
+}
+
 export interface CreateJobOpportunityRequest {
   company: string;
   title: string;

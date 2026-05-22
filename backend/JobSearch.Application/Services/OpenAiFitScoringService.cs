@@ -34,7 +34,8 @@ public sealed class OpenAiFitScoringService : IFitScoringService
         using var response = await httpClient.SendAsync(request, cancellationToken);
         if (!response.IsSuccessStatusCode)
         {
-            throw new InvalidOperationException("OpenAI fit scoring request failed.");
+            var responseBody = await response.Content.ReadAsStringAsync(cancellationToken);
+            throw new InvalidOperationException(BuildRequestFailureMessage(response, responseBody));
         }
 
         var responseJson = await response.Content.ReadAsStringAsync(cancellationToken);
@@ -176,6 +177,66 @@ public sealed class OpenAiFitScoringService : IFitScoringService
         }
 
         throw new InvalidOperationException("OpenAI fit scoring response did not include output JSON.");
+    }
+
+    private static string BuildRequestFailureMessage(HttpResponseMessage response, string responseBody)
+    {
+        var statusCode = (int)response.StatusCode;
+        var reasonPhrase = response.ReasonPhrase;
+        var openAiMessage = TryExtractOpenAiErrorMessage(responseBody);
+
+        if (!string.IsNullOrWhiteSpace(openAiMessage))
+        {
+            return $"OpenAI fit scoring request failed ({statusCode} {reasonPhrase}): {openAiMessage}";
+        }
+
+        var safeBodySnippet = BuildSafeBodySnippet(responseBody);
+        return $"OpenAI fit scoring request failed ({statusCode} {reasonPhrase}). Response body: {safeBodySnippet}";
+    }
+
+    private static string? TryExtractOpenAiErrorMessage(string responseBody)
+    {
+        if (string.IsNullOrWhiteSpace(responseBody))
+        {
+            return null;
+        }
+
+        try
+        {
+            using var document = JsonDocument.Parse(responseBody);
+            var root = document.RootElement;
+
+            if (!root.TryGetProperty("error", out var error) ||
+                error.ValueKind != JsonValueKind.Object)
+            {
+                return null;
+            }
+
+            if (error.TryGetProperty("message", out var message) &&
+                message.ValueKind == JsonValueKind.String)
+            {
+                return message.GetString();
+            }
+
+            return null;
+        }
+        catch (JsonException)
+        {
+            return null;
+        }
+    }
+
+    private static string BuildSafeBodySnippet(string responseBody)
+    {
+        if (string.IsNullOrWhiteSpace(responseBody))
+        {
+            return "<empty>";
+        }
+
+        const int maxLength = 400;
+        return responseBody.Length <= maxLength
+            ? responseBody
+            : responseBody[..maxLength] + "...";
     }
 
     private static bool IsValidResult(FitScoreResult? result) =>
