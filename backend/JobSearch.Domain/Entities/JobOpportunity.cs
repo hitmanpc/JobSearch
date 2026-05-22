@@ -14,6 +14,7 @@ public sealed class JobOpportunity
     public ApplicationStatus Status { get; set; } = ApplicationStatus.Found;
     public int? FitScore { get; set; }
     public FitScoreResult? FitScoreResult { get; set; }
+    public string? GeneratedRecruiterMessage { get; set; }
     public DateTimeOffset DateFound { get; set; } = DateTimeOffset.UtcNow;
     public DateTimeOffset? DateApplied { get; set; }
 }
