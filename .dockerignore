@@ -1,0 +1,15 @@
+.git/
+.github/
+**/bin/
+**/obj/
+**/node_modules/
+**/dist/
+**/.angular/
+**/TestResults/
+**/coverage/
+*.db
+*.db-*
+appsettings.*.local.json
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*

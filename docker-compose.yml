@@ -1,0 +1,56 @@
+services:
+  api:
+    build:
+      context: .
+      dockerfile: backend/JobSearch.Api/Dockerfile
+    environment:
+      ASPNETCORE_ENVIRONMENT: Development
+      ASPNETCORE_URLS: http://+:5000
+      Database__Provider: ${DATABASE_PROVIDER:-Sqlite}
+      ConnectionStrings__DefaultConnection: ${DEFAULT_CONNECTION:-Data Source=/data/jobsearch.db}
+      FitScoringProvider: ${FIT_SCORING_PROVIDER:-Mock}
+      Ollama__BaseUrl: ${OLLAMA_BASE_URL:-http://host.docker.internal:11434/v1}
+      Ollama__Model: ${OLLAMA_MODEL:-qwen2.5:14b}
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    ports:
+      - "5000:5000"
+    volumes:
+      - jobsearch-sqlite:/data
+
+  frontend:
+    build:
+      context: frontend/job-search-ui
+      dockerfile: Dockerfile
+    environment:
+      CHOKIDAR_USEPOLLING: "true"
+    ports:
+      - "4200:4200"
+    volumes:
+      - ./frontend/job-search-ui:/app
+      - frontend-node-modules:/app/node_modules
+    depends_on:
+      - api
+
+  postgres:
+    image: postgres:16
+    profiles:
+      - postgres
+    environment:
+      POSTGRES_DB: jobsearch
+      POSTGRES_USER: jobsearch
+      POSTGRES_PASSWORD: jobsearch
+    ports:
+      - "5432:5432"
+    volumes:
+      - jobsearch-postgres:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U jobsearch -d jobsearch"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+volumes:
+  frontend-node-modules:
+  jobsearch-sqlite:
+  jobsearch-postgres:

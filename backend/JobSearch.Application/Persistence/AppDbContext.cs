@@ -1,5 +1,6 @@
 using System.Text.Json;
 using JobSearch.Domain.Entities;
+using Microsoft.EntityFrameworkCore.ChangeTracking;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
@@ -14,6 +15,12 @@ public sealed class AppDbContext(DbContextOptions<AppDbContext> options) : DbCon
         var listConverter = new ValueConverter<IReadOnlyCollection<string>, string>(
             value => JsonSerializer.Serialize(value, (JsonSerializerOptions?)null),
             value => JsonSerializer.Deserialize<string[]>(value, (JsonSerializerOptions?)null) ?? Array.Empty<string>());
+        var listComparer = new ValueComparer<IReadOnlyCollection<string>>(
+            (left, right) => left != null && right != null
+                ? left.SequenceEqual(right)
+                : left == right,
+            value => value.Aggregate(0, (hash, item) => HashCode.Combine(hash, item.GetHashCode(StringComparison.Ordinal))),
+            value => value.ToArray());
 
         modelBuilder.Entity<JobOpportunity>(entity =>
         {
@@ -25,9 +32,15 @@ public sealed class AppDbContext(DbContextOptions<AppDbContext> options) : DbCon
             entity.OwnsOne(x => x.FitScoreResult, owned =>
             {
                 owned.Property(x => x.RecommendedAction);
-                owned.Property(x => x.MatchingSkills).HasConversion(listConverter);
-                owned.Property(x => x.MissingSkills).HasConversion(listConverter);
-                owned.Property(x => x.Concerns).HasConversion(listConverter);
+
+                var matchingSkills = owned.Property(x => x.MatchingSkills).HasConversion(listConverter);
+                matchingSkills.Metadata.SetValueComparer(listComparer);
+
+                var missingSkills = owned.Property(x => x.MissingSkills).HasConversion(listConverter);
+                missingSkills.Metadata.SetValueComparer(listComparer);
+
+                var concerns = owned.Property(x => x.Concerns).HasConversion(listConverter);
+                concerns.Metadata.SetValueComparer(listComparer);
             });
         });
     }

@@ -8,7 +8,10 @@ namespace JobSearch.Application.Repositories;
 public sealed class EfJobRepository(AppDbContext dbContext) : IJobRepository
 {
     public async Task<IReadOnlyCollection<JobOpportunity>> GetAllAsync(CancellationToken cancellationToken = default)
-        => await dbContext.Jobs.AsNoTracking().OrderByDescending(x => x.DateFound).ToArrayAsync(cancellationToken);
+    {
+        var jobs = await dbContext.Jobs.AsNoTracking().ToArrayAsync(cancellationToken);
+        return jobs.OrderByDescending(x => x.DateFound).ToArray();
+    }
 
     public async Task<JobOpportunity?> GetByIdAsync(Guid id, CancellationToken cancellationToken = default)
         => await dbContext.Jobs.FirstOrDefaultAsync(x => x.Id == id, cancellationToken);
