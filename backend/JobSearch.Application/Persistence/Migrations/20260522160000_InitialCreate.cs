@@ -43,7 +43,7 @@ public partial class InitialCreate : Migration
         }
 
         migrationBuilder.Sql("""
-            CREATE TABLE IF NOT EXISTS "Jobs" (
+            CREATE TABLE "Jobs" (
                 "Id" TEXT NOT NULL CONSTRAINT "PK_Jobs" PRIMARY KEY,
                 "Company" TEXT NOT NULL,
                 "Title" TEXT NOT NULL,
