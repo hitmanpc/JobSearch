@@ -28,7 +28,7 @@ public sealed class OpenAiFitScoringServiceTests
         using var httpClient = new HttpClient(new StubHttpMessageHandler(HttpStatusCode.OK, responseJson));
         var service = new OpenAiFitScoringService(httpClient, "test-key");
 
-        var result = await service.ScoreAsync(CreateJob());
+        var result = await service.ScoreAsync(CreateJob(), string.Empty);
 
         Assert.Equal(82, result.FitScore);
         Assert.Contains("Angular", result.MatchingSkills);
@@ -52,7 +52,7 @@ public sealed class OpenAiFitScoringServiceTests
         using var httpClient = new HttpClient(new StubHttpMessageHandler(HttpStatusCode.BadRequest, errorResponse));
         var service = new OpenAiFitScoringService(httpClient, "test-key");
 
-        var exception = await Assert.ThrowsAsync<InvalidOperationException>(() => service.ScoreAsync(CreateJob()));
+        var exception = await Assert.ThrowsAsync<InvalidOperationException>(() => service.ScoreAsync(CreateJob(), string.Empty));
 
         Assert.Contains("OpenAI fit scoring request failed (400 Bad Request)", exception.Message);
         Assert.Contains("requested model is not available", exception.Message);
@@ -66,7 +66,7 @@ public sealed class OpenAiFitScoringServiceTests
         using var httpClient = new HttpClient(new StubHttpMessageHandler(HttpStatusCode.OK, "{}"));
         var service = new OpenAiFitScoringService(httpClient, "test-key");
 
-        var exception = await Assert.ThrowsAsync<InvalidOperationException>(() => service.ScoreAsync(CreateJob()));
+        var exception = await Assert.ThrowsAsync<InvalidOperationException>(() => service.ScoreAsync(CreateJob(), string.Empty));
 
         Assert.DoesNotContain("test-key", exception.Message);
         Assert.DoesNotContain("Build Angular", exception.Message);

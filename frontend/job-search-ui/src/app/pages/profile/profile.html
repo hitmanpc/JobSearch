@@ -1,0 +1,30 @@
+<h1 class="page-title">Candidate Profile</h1>
+<p class="page-subtitle">Paste your resume below. It will be compared against job descriptions when scoring fit.</p>
+
+@if (isLoading()) {
+  <p class="status-text">Loading&hellip;</p>
+} @else {
+  <div class="profile-form">
+    <label class="field-label" for="resume-text">Resume</label>
+    <textarea
+      id="resume-text"
+      class="resume-textarea"
+      [ngModel]="resumeText()"
+      (ngModelChange)="resumeText.set($event)"
+      placeholder="Paste the full text of your resume here&hellip;"
+      rows="24"
+    ></textarea>
+
+    <div class="form-footer">
+      @if (savedMessage()) {
+        <span class="success-message">{{ savedMessage() }}</span>
+      }
+      @if (errorMessage()) {
+        <span class="error-message">{{ errorMessage() }}</span>
+      }
+      <button class="btn-primary" (click)="save()" [disabled]="isSaving()">
+        {{ isSaving() ? 'Saving…' : 'Save Resume' }}
+      </button>
+    </div>
+  </div>
+}

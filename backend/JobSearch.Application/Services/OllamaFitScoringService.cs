@@ -19,7 +19,7 @@ public sealed class OllamaFitScoringService : IFitScoringService
         this.model = model;
     }
 
-    public async Task<FitScoreResult> ScoreAsync(JobOpportunity job, CancellationToken cancellationToken = default)
+    public async Task<FitScoreResult> ScoreAsync(JobOpportunity job, string resumeText, CancellationToken cancellationToken = default)
     {
         var requestBody = new
         {
@@ -29,16 +29,7 @@ public sealed class OllamaFitScoringService : IFitScoringService
                 new
                 {
                     role = "system",
-                    content = """
-                        You score job opportunities for a senior full-stack software engineer.
-                        Return JSON only. Do not include markdown or explanatory text.
-                        The JSON must have these exact fields:
-                        - fitScore: integer between 0 and 100
-                        - matchingSkills: array of strings
-                        - missingSkills: array of strings
-                        - concerns: array of strings
-                        - recommendedAction: one of "Apply", "Review before applying", or "Deprioritize"
-                        """
+                    content = BuildSystemPrompt(resumeText)
                 },
                 new
                 {
@@ -83,6 +74,32 @@ public sealed class OllamaFitScoringService : IFitScoringService
         }
 
         return result;
+    }
+
+    private static string BuildSystemPrompt(string resumeText)
+    {
+        var resumeSection = string.IsNullOrWhiteSpace(resumeText)
+            ? string.Empty
+            : $"""
+
+              The candidate's resume is provided below. Use it to determine skill matches and gaps.
+
+              --- RESUME ---
+              {resumeText}
+              --- END RESUME ---
+              """;
+
+        return $"""
+            You score job opportunities for a senior full-stack software engineer.
+            Return JSON only. Do not include markdown or explanatory text.
+            The JSON must have these exact fields:
+            - fitScore: integer between 0 and 100
+            - matchingSkills: array of strings
+            - missingSkills: array of strings
+            - concerns: array of strings
+            - recommendedAction: one of "Apply", "Review before applying", or "Deprioritize"
+            {resumeSection}
+            """;
     }
 
     private static bool IsValidResult(FitScoreResult result)

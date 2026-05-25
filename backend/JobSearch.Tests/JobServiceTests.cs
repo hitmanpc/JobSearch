@@ -117,6 +117,15 @@ public sealed class JobServiceTests
 
     private static JobService CreateService()
     {
-        return new JobService(new InMemoryJobRepository(), new MockFitScoringService(), TimeProvider.System);
+        return new JobService(new InMemoryJobRepository(), new MockFitScoringService(), new StubCandidateProfileService(), TimeProvider.System);
+    }
+
+    private sealed class StubCandidateProfileService : ICandidateProfileService
+    {
+        public Task<string> GetResumeTextAsync(CancellationToken cancellationToken = default) =>
+            Task.FromResult(string.Empty);
+
+        public Task SaveResumeTextAsync(string resumeText, CancellationToken cancellationToken = default) =>
+            Task.CompletedTask;
     }
 }
