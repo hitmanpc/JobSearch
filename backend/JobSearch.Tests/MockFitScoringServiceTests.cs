@@ -17,7 +17,7 @@ public sealed class MockFitScoringServiceTests
             Description = "Build Angular, .NET, C#, Docker, SQL, and GitHub Actions workflows."
         };
 
-        var result = await service.ScoreAsync(job);
+        var result = await service.ScoreAsync(job, string.Empty);
 
         Assert.Equal(55, result.FitScore);
         Assert.Contains("Angular", result.MatchingSkills);
@@ -41,7 +41,7 @@ public sealed class MockFitScoringServiceTests
             Description = null
         };
 
-        var result = await service.ScoreAsync(job);
+        var result = await service.ScoreAsync(job, string.Empty);
 
         Assert.Equal(0, result.FitScore);
         Assert.Empty(result.MatchingSkills);

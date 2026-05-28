@@ -4,7 +4,7 @@ namespace JobSearch.Application.Services;
 
 public sealed class MockFitScoringService : IFitScoringService
 {
-    private static readonly IReadOnlyCollection<string> TargetSkills =
+    private static readonly IReadOnlyCollection<string> DefaultSkills =
     [
         "Angular",
         "React",
@@ -19,7 +19,16 @@ public sealed class MockFitScoringService : IFitScoringService
         "MongoDB"
     ];
 
-    public Task<FitScoreResult> ScoreAsync(JobOpportunity job, CancellationToken cancellationToken = default)
+    private readonly IReadOnlyCollection<string> targetSkills;
+
+    public MockFitScoringService(CandidateProfile? candidateProfile = null)
+    {
+        targetSkills = candidateProfile?.Skills is { Count: > 0 }
+            ? candidateProfile.Skills
+            : DefaultSkills;
+    }
+
+    public Task<FitScoreResult> ScoreAsync(JobOpportunity job, string resumeText, CancellationToken cancellationToken = default)
     {
         var searchableText = string.Join(
             ' ',
@@ -28,10 +37,10 @@ public sealed class MockFitScoringService : IFitScoringService
             job.Description,
             job.Location);
 
-        var matchingSkills = TargetSkills
+        var matchingSkills = targetSkills
             .Where(skill => ContainsSkill(searchableText, skill))
             .ToArray();
-        var missingSkills = TargetSkills.Except(matchingSkills).ToArray();
+        var missingSkills = targetSkills.Except(matchingSkills).ToArray();
         var fitScore = CalculateFitScore(matchingSkills.Length);
         var concerns = BuildConcerns(job, matchingSkills.Length);
 
@@ -50,8 +59,8 @@ public sealed class MockFitScoringService : IFitScoringService
     private static bool ContainsSkill(string searchableText, string skill) =>
         searchableText.Contains(skill, StringComparison.OrdinalIgnoreCase);
 
-    private static int CalculateFitScore(int matchingSkillCount) =>
-        (int)Math.Round((double)matchingSkillCount / TargetSkills.Count * 100);
+    private int CalculateFitScore(int matchingSkillCount) =>
+        (int)Math.Round((double)matchingSkillCount / targetSkills.Count * 100);
 
     private static IReadOnlyCollection<string> BuildConcerns(JobOpportunity job, int matchingSkillCount)
     {

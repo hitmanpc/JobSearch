@@ -23,11 +23,11 @@ public sealed class OpenAiFitScoringService : IFitScoringService
         this.model = string.IsNullOrWhiteSpace(model) ? DefaultModel : model;
     }
 
-    public async Task<FitScoreResult> ScoreAsync(JobOpportunity job, CancellationToken cancellationToken = default)
+    public async Task<FitScoreResult> ScoreAsync(JobOpportunity job, string resumeText, CancellationToken cancellationToken = default)
     {
         using var request = new HttpRequestMessage(HttpMethod.Post, "https://api.openai.com/v1/responses")
         {
-            Content = JsonContent.Create(BuildRequest(job), options: JsonOptions)
+            Content = JsonContent.Create(BuildRequest(job, resumeText), options: JsonOptions)
         };
         request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", apiKey);
 
@@ -50,15 +50,11 @@ public sealed class OpenAiFitScoringService : IFitScoringService
         return result!;
     }
 
-    private object BuildRequest(JobOpportunity job) =>
+    private object BuildRequest(JobOpportunity job, string resumeText) =>
         new
         {
             model,
-            instructions = """
-                You score job opportunities for a senior full-stack software engineer.
-                Return JSON only. Do not include markdown or explanatory text.
-                Evaluate only the supplied job opportunity details.
-                """,
+            instructions = BuildInstructions(resumeText),
             input = new[]
             {
                 new
@@ -140,6 +136,27 @@ public sealed class OpenAiFitScoringService : IFitScoringService
                 }
             }
         };
+
+    private static string BuildInstructions(string resumeText)
+    {
+        var resumeSection = string.IsNullOrWhiteSpace(resumeText)
+            ? string.Empty
+            : $"""
+
+
+              The candidate's resume is provided below. Use it to determine skill matches and gaps.
+
+              --- RESUME ---
+              {resumeText}
+              --- END RESUME ---
+              """;
+
+        return $"""
+            You score job opportunities for a senior full-stack software engineer.
+            Return JSON only. Do not include markdown or explanatory text.
+            Evaluate only the supplied job opportunity details.{resumeSection}
+            """;
+    }
 
     private static string ExtractOutputText(string responseJson)
     {

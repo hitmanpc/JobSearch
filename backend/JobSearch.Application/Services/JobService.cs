@@ -9,15 +9,18 @@ public sealed class JobService : IJobService
 {
     private readonly IJobRepository repository;
     private readonly IFitScoringService fitScoringService;
+    private readonly ICandidateProfileService candidateProfileService;
     private readonly TimeProvider timeProvider;
 
     public JobService(
         IJobRepository repository,
         IFitScoringService fitScoringService,
+        ICandidateProfileService candidateProfileService,
         TimeProvider timeProvider)
     {
         this.repository = repository;
         this.fitScoringService = fitScoringService;
+        this.candidateProfileService = candidateProfileService;
         this.timeProvider = timeProvider;
     }
 
@@ -78,7 +81,8 @@ public sealed class JobService : IJobService
             return null;
         }
 
-        var scoreResult = await fitScoringService.ScoreAsync(job, cancellationToken);
+        var resumeText = await candidateProfileService.GetResumeTextAsync(cancellationToken);
+        var scoreResult = await fitScoringService.ScoreAsync(job, resumeText, cancellationToken);
         job.FitScore = scoreResult.FitScore;
         job.FitScoreResult = scoreResult;
 

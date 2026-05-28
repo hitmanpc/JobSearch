@@ -9,6 +9,7 @@ namespace JobSearch.Application.Persistence;
 public sealed class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(options)
 {
     public DbSet<JobOpportunity> Jobs => Set<JobOpportunity>();
+    public DbSet<CandidateProfileSettings> CandidateProfile => Set<CandidateProfileSettings>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {

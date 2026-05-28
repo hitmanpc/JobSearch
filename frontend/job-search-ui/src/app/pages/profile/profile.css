@@ -1,0 +1,69 @@
+.profile-form {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  max-width: 860px;
+}
+
+.field-label {
+  font-weight: 600;
+  font-size: 0.875rem;
+  color: #344054;
+}
+
+.resume-textarea {
+  width: 100%;
+  padding: 0.75rem 1rem;
+  border: 1px solid #d0d5dd;
+  border-radius: 8px;
+  background: #ffffff;
+  resize: vertical;
+  line-height: 1.6;
+  color: #182033;
+}
+
+.resume-textarea:focus {
+  outline: none;
+  border-color: #1843a3;
+  box-shadow: 0 0 0 3px #eef3ff;
+}
+
+.form-footer {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  flex-wrap: wrap;
+}
+
+.success-message {
+  font-size: 0.875rem;
+  color: #027a48;
+}
+
+.error-message {
+  font-size: 0.875rem;
+  color: #b42318;
+}
+
+.btn-primary {
+  margin-left: auto;
+  padding: 0.6rem 1.25rem;
+  background: #1843a3;
+  color: #ffffff;
+  border-radius: 8px;
+  font-weight: 600;
+  font-size: 0.875rem;
+}
+
+.btn-primary:hover:not(:disabled) {
+  background: #133888;
+}
+
+.status-text {
+  color: #667085;
+}
+
+.page-subtitle {
+  margin: 0 0 1.5rem;
+  color: #667085;
+}

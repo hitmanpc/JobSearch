@@ -55,7 +55,13 @@ builder.Services.AddDbContext<AppDbContext>(options =>
 });
 
 builder.Services.AddScoped<IJobRepository, EfJobRepository>();
-builder.Services.AddScoped<MockFitScoringService>();
+builder.Services.AddScoped<ICandidateProfileService, CandidateProfileService>();
+builder.Services.AddScoped<MockFitScoringService>(serviceProvider =>
+{
+    var configuration = serviceProvider.GetRequiredService<IConfiguration>();
+    var profile = configuration.GetSection("CandidateProfile").Get<CandidateProfile>() ?? new CandidateProfile();
+    return new MockFitScoringService(profile);
+});
 builder.Services.AddHttpClient();
 builder.Services.AddScoped<IFitScoringService>(serviceProvider =>
 {
