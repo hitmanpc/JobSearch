@@ -1,5 +1,6 @@
 import { Component, OnInit, inject, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
+import { JobImportStatus } from '../../models/candidate-profile';
 import { CandidateProfileService } from '../../services/candidate-profile.service';
 
 @Component({
@@ -12,6 +13,7 @@ export class ProfileComponent implements OnInit {
   private readonly profileService = inject(CandidateProfileService);
 
   protected readonly resumeText = signal('');
+  protected readonly jobImportStatus = signal<JobImportStatus | null>(null);
   protected readonly isLoading = signal(true);
   protected readonly isSaving = signal(false);
   protected readonly savedMessage = signal<string | null>(null);
@@ -21,6 +23,7 @@ export class ProfileComponent implements OnInit {
     this.profileService.getProfile().subscribe({
       next: profile => {
         this.resumeText.set(profile.resumeText);
+        this.jobImportStatus.set(profile.jobImportStatus);
         this.isLoading.set(false);
       },
       error: () => {
@@ -45,5 +48,30 @@ export class ProfileComponent implements OnInit {
         this.errorMessage.set('Failed to save resume.');
       }
     });
+  }
+
+  protected formatDateTime(value: string | null): string {
+    if (!value) {
+      return 'Not available';
+    }
+
+    const parsed = new Date(value);
+
+    if (Number.isNaN(parsed.getTime())) {
+      return value;
+    }
+
+    return new Intl.DateTimeFormat(undefined, {
+      dateStyle: 'medium',
+      timeStyle: 'short'
+    }).format(parsed);
+  }
+
+  protected formatResult(status: JobImportStatus): string {
+    return status.lastResult || 'Not available';
+  }
+
+  protected formatErrorMessage(status: JobImportStatus): string {
+    return status.lastErrorMessage || 'None';
   }
 }

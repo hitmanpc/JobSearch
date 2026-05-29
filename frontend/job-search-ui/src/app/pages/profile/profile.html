@@ -4,27 +4,83 @@
 @if (isLoading()) {
   <p class="status-text">Loading&hellip;</p>
 } @else {
-  <div class="profile-form">
-    <label class="field-label" for="resume-text">Resume</label>
-    <textarea
-      id="resume-text"
-      class="resume-textarea"
-      [ngModel]="resumeText()"
-      (ngModelChange)="resumeText.set($event)"
-      placeholder="Paste the full text of your resume here&hellip;"
-      rows="24"
-    ></textarea>
+  <div class="profile-layout">
+    <section class="profile-form" aria-labelledby="resume-heading">
+      <h2 id="resume-heading" class="section-title">Resume</h2>
+      <label class="field-label" for="resume-text">Resume text</label>
+      <textarea
+        id="resume-text"
+        class="resume-textarea"
+        [ngModel]="resumeText()"
+        (ngModelChange)="resumeText.set($event)"
+        placeholder="Paste the full text of your resume here&hellip;"
+        rows="24"
+      ></textarea>
 
-    <div class="form-footer">
-      @if (savedMessage()) {
-        <span class="success-message">{{ savedMessage() }}</span>
+      <div class="form-footer">
+        @if (savedMessage()) {
+          <span class="success-message">{{ savedMessage() }}</span>
+        }
+        @if (errorMessage()) {
+          <span class="error-message">{{ errorMessage() }}</span>
+        }
+        <button class="btn-primary" type="button" (click)="save()" [disabled]="isSaving()">
+          {{ isSaving() ? 'Saving…' : 'Save Resume' }}
+        </button>
+      </div>
+    </section>
+
+    <section class="job-import-panel" aria-labelledby="job-import-heading">
+      <div class="job-import-header">
+        <div>
+          <h2 id="job-import-heading" class="section-title">Job Import</h2>
+          <p>Read-only worker status from the backend.</p>
+        </div>
+
+        @if (jobImportStatus(); as status) {
+          <span class="state-pill" [class.enabled]="status.workerEnabled" [class.disabled]="!status.workerEnabled">
+            {{ status.workerEnabled ? 'Enabled' : 'Disabled' }}
+          </span>
+        }
+      </div>
+
+      @if (jobImportStatus(); as status) {
+        <dl class="status-grid">
+          <div>
+            <dt>Interval</dt>
+            <dd>{{ status.configuredIntervalMinutes }} minutes</dd>
+          </div>
+          <div>
+            <dt>Last run time</dt>
+            <dd>{{ formatDateTime(status.lastRunStartedAt) }}</dd>
+          </div>
+          <div>
+            <dt>Last completion time</dt>
+            <dd>{{ formatDateTime(status.lastRunCompletedAt) }}</dd>
+          </div>
+          <div>
+            <dt>Last result</dt>
+            <dd>
+              <span
+                class="result-pill"
+                [class.success]="status.lastRunSucceeded === true"
+                [class.error]="status.lastRunSucceeded === false"
+                [class.neutral]="status.lastRunSucceeded === null"
+              >{{ formatResult(status) }}</span>
+            </dd>
+          </div>
+          <div>
+            <dt>Last error message</dt>
+            <dd>{{ formatErrorMessage(status) }}</dd>
+          </div>
+          <div>
+            <dt>Next expected run time</dt>
+            <dd>{{ formatDateTime(status.nextExpectedRunAt) }}</dd>
+          </div>
+        </dl>
+      } @else {
+        <p class="status-text">Job import status is not available.</p>
       }
-      @if (errorMessage()) {
-        <span class="error-message">{{ errorMessage() }}</span>
-      }
-      <button class="btn-primary" (click)="save()" [disabled]="isSaving()">
-        {{ isSaving() ? 'Saving…' : 'Save Resume' }}
-      </button>
-    </div>
+    </section>
   </div>
 }
