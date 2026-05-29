@@ -10,6 +10,9 @@ public sealed class JobOpportunity
     public string? Location { get; set; }
     public RemoteType RemoteType { get; set; } = RemoteType.Unknown;
     public string? Url { get; set; }
+    public string? Source { get; set; }
+    public string? ExternalId { get; set; }
+    public DateTimeOffset? LastSeenAt { get; set; }
     public string? Description { get; set; }
     public ApplicationStatus Status { get; set; } = ApplicationStatus.Found;
     public int? FitScore { get; set; }

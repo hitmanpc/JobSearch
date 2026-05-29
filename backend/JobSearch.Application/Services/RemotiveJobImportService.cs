@@ -12,6 +12,7 @@ namespace JobSearch.Application.Services;
 public sealed class RemotiveJobImportService : IJobImportService
 {
     private const string RemoteJobsEndpoint = "/api/remote-jobs";
+    private const string SourceName = "Remotive";
 
     private readonly HttpClient httpClient;
     private readonly IJobRepository repository;
@@ -35,27 +36,20 @@ public sealed class RemotiveJobImportService : IJobImportService
         var response = await httpClient.GetFromJsonAsync<RemotiveJobsResponse>(RemoteJobsEndpoint, cancellationToken)
             ?? new RemotiveJobsResponse();
 
-        var existingJobs = await repository.GetAllAsync(cancellationToken);
-        var existingUrls = existingJobs
-            .Where(job => !string.IsNullOrWhiteSpace(job.Url))
-            .Select(job => job.Url!)
-            .ToHashSet(StringComparer.OrdinalIgnoreCase);
-
-        var importedCount = 0;
+        var seenCount = 0;
         foreach (var remotiveJob in response.Jobs ?? Array.Empty<RemotiveJob>())
         {
-            if (!remotiveJob.HasRequiredFields || existingUrls.Contains(remotiveJob.Url))
+            if (!remotiveJob.HasRequiredFields)
             {
                 continue;
             }
 
             var job = MapToJobOpportunity(remotiveJob, timeProvider.GetUtcNow());
-            await repository.AddAsync(job, cancellationToken);
-            existingUrls.Add(job.Url!);
-            importedCount++;
+            await repository.UpsertImportedAsync(job, cancellationToken);
+            seenCount++;
         }
 
-        logger.LogInformation("Imported {ImportedCount} new Remotive jobs from {Endpoint}.", importedCount, RemoteJobsEndpoint);
+        logger.LogInformation("Upserted {SeenCount} Remotive jobs from {Endpoint}.", seenCount, RemoteJobsEndpoint);
     }
 
     internal static JobOpportunity MapToJobOpportunity(RemotiveJob remotiveJob, DateTimeOffset fallbackDateFound)
@@ -69,6 +63,9 @@ public sealed class RemotiveJobImportService : IJobImportService
                 : remotiveJob.CandidateRequiredLocation.Trim(),
             RemoteType = RemoteType.Remote,
             Url = remotiveJob.Url.Trim(),
+            Source = SourceName,
+            ExternalId = remotiveJob.Id > 0 ? remotiveJob.Id.ToString(System.Globalization.CultureInfo.InvariantCulture) : null,
+            LastSeenAt = fallbackDateFound,
             Description = BuildDescription(remotiveJob),
             Status = ApplicationStatus.Found,
             DateFound = ParsePublicationDate(remotiveJob.PublicationDate) ?? fallbackDateFound,

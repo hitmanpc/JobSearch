@@ -71,6 +71,9 @@ public sealed class JobImportRegistrationTests
         public Task<JobSearch.Domain.Entities.JobOpportunity> AddAsync(JobSearch.Domain.Entities.JobOpportunity job, CancellationToken cancellationToken = default) =>
             Task.FromResult(job);
 
+        public Task<JobSearch.Domain.Entities.JobOpportunity> UpsertImportedAsync(JobSearch.Domain.Entities.JobOpportunity job, CancellationToken cancellationToken = default) =>
+            Task.FromResult(job);
+
         public Task UpdateAsync(JobSearch.Domain.Entities.JobOpportunity job, CancellationToken cancellationToken = default) =>
             Task.CompletedTask;
     }
