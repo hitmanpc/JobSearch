@@ -12,6 +12,16 @@ You are a validation specialist for the JobSearch repo.
 - Check frontend build or test scripts when frontend files change.
 - Interpret failures and point to the smallest likely fix.
 
+## Backend Test Files
+| File | Coverage area |
+|------|---------------|
+| `JobServiceTests.cs` | Core job CRUD and status transitions |
+| `MockFitScoringServiceTests.cs` | Mock fit scoring behavior |
+| `OpenAiFitScoringServiceTests.cs` | OpenAI fit scoring integration |
+| `RemotiveJobImportServiceTests.cs` | Remotive HTTP fetch, dedup, and field mapping |
+| `JobImportRegistrationTests.cs` | `AddConfiguredJobImport` DI registration, provider validation |
+| `ScheduledJobImportWorkerTests.cs` | Worker enable/disable, interval timing (uses `FakeTimeProvider`) |
+
 ## Constraints
 - Do not make unrelated code changes.
 - Do not guess at failures when a direct check is available.

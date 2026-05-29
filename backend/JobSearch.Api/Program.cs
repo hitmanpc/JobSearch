@@ -87,7 +87,10 @@ builder.Services.AddScoped<IFitScoringService>(serviceProvider =>
     throw new InvalidOperationException("FitScoringProvider must be Mock, OpenAI, or Ollama.");
 });
 builder.Services.AddScoped<IJobService, JobService>();
-builder.Services.AddScoped<IJobImportService, NoOpJobImportService>();
+if (JobImportServiceCollectionExtensions.IsEnabled(builder.Configuration))
+{
+    builder.Services.AddConfiguredJobImport(builder.Configuration);
+}
 builder.Services.AddHostedService<ScheduledJobImportWorker>();
 
 var app = builder.Build();

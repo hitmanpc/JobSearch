@@ -1,4 +1,5 @@
 using JobSearch.Application.Automation;
+using JobSearch.Application.Services;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging.Abstractions;
@@ -9,6 +10,22 @@ namespace JobSearch.Tests;
 
 public sealed class ScheduledJobImportWorkerTests
 {
+    [Fact]
+    public async Task StartAsync_WhenEnabledWithoutRegisteredImporter_DoesNotThrow()
+    {
+        await using var provider = CreateProvider(
+            new Dictionary<string, string?>
+            {
+                ["JobImport:Enabled"] = "true",
+                ["JobImport:IntervalMinutes"] = "1"
+            },
+            registerDefaultImporter: false);
+        var worker = CreateWorker(provider);
+
+        await worker.StartAsync(CancellationToken.None);
+        await worker.StopAsync(CancellationToken.None);
+    }
+
     [Fact]
     public async Task StartAsync_WhenJobImportDisabled_DoesNotRunImporter()
     {
@@ -29,6 +46,7 @@ public sealed class ScheduledJobImportWorkerTests
     [Fact]
     public async Task StartAsync_WhenEnabled_RunsImmediatelyAndThenWaitsForConfiguredInterval()
     {
+        SynchronizationContext.SetSynchronizationContext(null);
         CountingJobImportService.Reset();
         var timeProvider = new FakeTimeProvider();
         await using var provider = CreateProvider(new Dictionary<string, string?>
@@ -40,12 +58,12 @@ public sealed class ScheduledJobImportWorkerTests
 
         await worker.StartAsync(CancellationToken.None);
         await CountingJobImportService.WaitForImportCountAsync(1);
-        timeProvider.Advance(TimeSpan.FromMinutes(4));
-        await Task.Yield();
+        await Task.Delay(100); // wait for Task.Run worker thread to register its Task.Delay timer
 
+        timeProvider.Advance(TimeSpan.FromMinutes(4));
         Assert.Equal(1, CountingJobImportService.ImportCount);
 
-        timeProvider.Advance(TimeSpan.FromMinutes(1));
+        timeProvider.Advance(TimeSpan.FromMinutes(2)); // total 6 min exceeds the 5 min interval
         await CountingJobImportService.WaitForImportCountAsync(2);
         await worker.StopAsync(CancellationToken.None);
 
@@ -95,7 +113,8 @@ public sealed class ScheduledJobImportWorkerTests
 
     private static ServiceProvider CreateProvider(
         Dictionary<string, string?> configurationValues,
-        Action<IServiceCollection>? configureServices = null)
+        Action<IServiceCollection>? configureServices = null,
+        bool registerDefaultImporter = true)
     {
         var services = new ServiceCollection();
         var configuration = new ConfigurationBuilder()
@@ -106,7 +125,7 @@ public sealed class ScheduledJobImportWorkerTests
         services.AddSingleton<TimeProvider>(TimeProvider.System);
         services.AddLogging();
         configureServices?.Invoke(services);
-        if (!services.Any(descriptor => descriptor.ServiceType == typeof(IJobImportService)))
+        if (registerDefaultImporter && !services.Any(descriptor => descriptor.ServiceType == typeof(IJobImportService)))
         {
             services.AddScoped<IJobImportService, CountingJobImportService>();
         }
@@ -166,6 +185,7 @@ public sealed class ScheduledJobImportWorkerTests
             else if (count == 2)
             {
                 secondImport.TrySetResult();
+                return Task.Delay(Timeout.InfiniteTimeSpan, cancellationToken);
             }
 
             return Task.CompletedTask;
