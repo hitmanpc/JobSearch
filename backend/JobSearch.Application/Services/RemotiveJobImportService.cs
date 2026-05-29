@@ -20,25 +20,29 @@ public sealed class RemotiveJobImportService : IJobImportService
     private readonly TimeProvider timeProvider;
     private readonly ILogger<RemotiveJobImportService> logger;
     private readonly RemotiveJobImportOptions options;
+    private readonly ICandidateProfileService? candidateProfileService;
 
     public RemotiveJobImportService(
         HttpClient httpClient,
         IJobRepository repository,
         TimeProvider timeProvider,
         ILogger<RemotiveJobImportService> logger,
-        IOptions<RemotiveJobImportOptions>? options = null)
+        IOptions<RemotiveJobImportOptions>? options = null,
+        ICandidateProfileService? candidateProfileService = null)
     {
         this.httpClient = httpClient;
         this.repository = repository;
         this.timeProvider = timeProvider;
         this.logger = logger;
         this.options = (options ?? Options.Create(new RemotiveJobImportOptions())).Value;
+        this.candidateProfileService = candidateProfileService;
         this.options.Validate();
     }
 
     public async Task ImportAsync(CancellationToken cancellationToken = default)
     {
-        var endpoint = BuildRemoteJobsEndpoint(options);
+        var effectiveOptions = await ResolveOptionsAsync(cancellationToken);
+        var endpoint = BuildRemoteJobsEndpoint(effectiveOptions);
         var response = await httpClient.GetFromJsonAsync<RemotiveJobsResponse>(endpoint, cancellationToken)
             ?? new RemotiveJobsResponse();
 
@@ -56,6 +60,29 @@ public sealed class RemotiveJobImportService : IJobImportService
         }
 
         logger.LogInformation("Upserted {SeenCount} Remotive jobs from {Endpoint}.", seenCount, endpoint);
+    }
+
+    internal async Task<RemotiveJobImportOptions> ResolveOptionsAsync(CancellationToken cancellationToken = default)
+    {
+        if (candidateProfileService is null)
+        {
+            return options;
+        }
+
+        var profile = await candidateProfileService.GetSettingsAsync(cancellationToken);
+        var resolved = new RemotiveJobImportOptions
+        {
+            RemotiveCategory = string.IsNullOrWhiteSpace(profile.RemotiveCategory)
+                ? options.RemotiveCategory
+                : profile.RemotiveCategory.Trim(),
+            RemotiveSearchText = string.IsNullOrWhiteSpace(profile.RemotiveSearchText)
+                ? options.RemotiveSearchText
+                : profile.RemotiveSearchText.Trim(),
+            RemotiveLimit = profile.RemotiveLimit ?? options.RemotiveLimit
+        };
+
+        resolved.Validate("Candidate profile Remotive limit must be a positive integer when provided.");
+        return resolved;
     }
 
     internal static string BuildRemoteJobsEndpoint(RemotiveJobImportOptions options)

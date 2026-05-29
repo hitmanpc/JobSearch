@@ -15,6 +15,9 @@ export class CandidateProfileService {
     return this.http.get<CandidateProfileResponse>(this.baseUrl).pipe(
       map(profile => ({
         resumeText: profile.resumeText,
+        remotiveCategory: profile.remotiveCategory,
+        remotiveSearchText: profile.remotiveSearchText,
+        remotiveLimit: profile.remotiveLimit,
         jobImportStatus: {
           workerEnabled: profile.jobImportStatus.workerEnabled,
           configuredIntervalMinutes: profile.jobImportStatus.configuredIntervalMinutes,

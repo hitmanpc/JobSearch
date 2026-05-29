@@ -92,6 +92,59 @@ public sealed class RemotiveJobImportServiceTests
         Assert.Equal(new Uri(expectedUri), handler.RequestUri);
     }
 
+
+    [Fact]
+    public async Task ImportAsync_UsesProfileRemotivePreferencesOverConfiguredDefaults()
+    {
+        var handler = new JsonResponseHandler("""{"jobs": []}""");
+        using var httpClient = new HttpClient(handler)
+        {
+            BaseAddress = new Uri("https://remotive.com")
+        };
+        var service = CreateService(
+            httpClient,
+            new CapturingJobRepository(),
+            new RemotiveJobImportOptions
+            {
+                RemotiveCategory = "App Settings Category",
+                RemotiveSearchText = "app settings search",
+                RemotiveLimit = 10
+            },
+            new StubCandidateProfileService(new CandidateProfileSettingsSnapshot(
+                string.Empty,
+                "Software Development",
+                "senior angular",
+                25)));
+
+        await service.ImportAsync();
+
+        Assert.Equal(new Uri("https://remotive.com/api/remote-jobs?category=Software%20Development&search=senior%20angular&limit=25"), handler.RequestUri);
+    }
+
+    [Fact]
+    public async Task ImportAsync_WhenProfilePreferencesAreEmpty_FallsBackToConfiguredDefaults()
+    {
+        var handler = new JsonResponseHandler("""{"jobs": []}""");
+        using var httpClient = new HttpClient(handler)
+        {
+            BaseAddress = new Uri("https://remotive.com")
+        };
+        var service = CreateService(
+            httpClient,
+            new CapturingJobRepository(),
+            new RemotiveJobImportOptions
+            {
+                RemotiveCategory = "Software Development",
+                RemotiveSearchText = "full stack",
+                RemotiveLimit = 50
+            },
+            new StubCandidateProfileService(new CandidateProfileSettingsSnapshot(string.Empty, " ", null, null)));
+
+        await service.ImportAsync();
+
+        Assert.Equal(new Uri("https://remotive.com/api/remote-jobs?category=Software%20Development&search=full%20stack&limit=50"), handler.RequestUri);
+    }
+
     [Theory]
     [InlineData(0)]
     [InlineData(-1)]
@@ -164,14 +217,38 @@ public sealed class RemotiveJobImportServiceTests
     private static RemotiveJobImportService CreateService(
         HttpClient httpClient,
         CapturingJobRepository repository,
-        RemotiveJobImportOptions? options = null)
+        RemotiveJobImportOptions? options = null,
+        ICandidateProfileService? candidateProfileService = null)
     {
         return new RemotiveJobImportService(
             httpClient,
             repository,
             TimeProvider.System,
             NullLogger<RemotiveJobImportService>.Instance,
-            Options.Create(options ?? new RemotiveJobImportOptions()));
+            Options.Create(options ?? new RemotiveJobImportOptions()),
+            candidateProfileService);
+    }
+
+    private sealed class StubCandidateProfileService : ICandidateProfileService
+    {
+        private readonly CandidateProfileSettingsSnapshot settings;
+
+        public StubCandidateProfileService(CandidateProfileSettingsSnapshot settings)
+        {
+            this.settings = settings;
+        }
+
+        public Task<CandidateProfileSettingsSnapshot> GetSettingsAsync(CancellationToken cancellationToken = default) =>
+            Task.FromResult(settings);
+
+        public Task SaveSettingsAsync(CandidateProfileSettingsSnapshot settings, CancellationToken cancellationToken = default) =>
+            Task.CompletedTask;
+
+        public Task<string> GetResumeTextAsync(CancellationToken cancellationToken = default) =>
+            Task.FromResult(settings.ResumeText);
+
+        public Task SaveResumeTextAsync(string resumeText, CancellationToken cancellationToken = default) =>
+            Task.CompletedTask;
     }
 
     private sealed class JsonResponseHandler : HttpMessageHandler

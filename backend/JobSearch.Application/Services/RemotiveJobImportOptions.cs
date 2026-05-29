@@ -10,11 +10,11 @@ public sealed class RemotiveJobImportOptions
 
     public int? RemotiveLimit { get; init; }
 
-    public void Validate()
+    public void Validate(string limitErrorMessage = "JobImport:RemotiveLimit must be a positive integer when configured.")
     {
         if (RemotiveLimit is <= 0)
         {
-            throw new InvalidOperationException("JobImport:RemotiveLimit must be a positive integer when configured.");
+            throw new InvalidOperationException(limitErrorMessage);
         }
     }
 }
