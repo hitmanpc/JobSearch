@@ -10,6 +10,7 @@ public sealed class AppDbContext(DbContextOptions<AppDbContext> options) : DbCon
 {
     public DbSet<JobOpportunity> Jobs => Set<JobOpportunity>();
     public DbSet<CandidateProfileSettings> CandidateProfile => Set<CandidateProfileSettings>();
+    public DbSet<ScheduledJobRunStatus> ScheduledJobRunStatuses => Set<ScheduledJobRunStatus>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -25,6 +26,21 @@ public sealed class AppDbContext(DbContextOptions<AppDbContext> options) : DbCon
                     0,
                     (hash, item) => HashCode.Combine(hash, item == null ? 0 : StringComparer.Ordinal.GetHashCode(item))),
             value => value == null ? Array.Empty<string>() : value.ToArray());
+
+
+        modelBuilder.Entity<ScheduledJobRunStatus>(entity =>
+        {
+            entity.HasKey(x => x.Id);
+            entity.Property(x => x.Id).ValueGeneratedNever();
+            entity.ToTable("ScheduledJobRunStatuses", table => table.HasCheckConstraint(
+                "CK_ScheduledJobRunStatuses_Singleton",
+                $"\"{nameof(ScheduledJobRunStatus.Id)}\" = {ScheduledJobRunStatus.SingletonId}"));
+            entity.Property(x => x.LastResult)
+                .HasMaxLength(ScheduledJobRunStatus.LastResultMaxLength)
+                .IsRequired();
+            entity.Property(x => x.LastErrorMessage)
+                .HasMaxLength(ScheduledJobRunStatus.LastErrorMessageMaxLength);
+        });
 
         modelBuilder.Entity<JobOpportunity>(entity =>
         {
