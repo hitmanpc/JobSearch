@@ -46,6 +46,7 @@ public sealed class ScheduledJobImportWorkerTests
     [Fact]
     public async Task StartAsync_WhenEnabled_RunsImmediatelyAndThenWaitsForConfiguredInterval()
     {
+        SynchronizationContext.SetSynchronizationContext(null);
         CountingJobImportService.Reset();
         var timeProvider = new FakeTimeProvider();
         await using var provider = CreateProvider(new Dictionary<string, string?>
@@ -57,12 +58,12 @@ public sealed class ScheduledJobImportWorkerTests
 
         await worker.StartAsync(CancellationToken.None);
         await CountingJobImportService.WaitForImportCountAsync(1);
-        timeProvider.Advance(TimeSpan.FromMinutes(4));
-        await Task.Yield();
+        await Task.Delay(100); // wait for Task.Run worker thread to register its Task.Delay timer
 
+        timeProvider.Advance(TimeSpan.FromMinutes(4));
         Assert.Equal(1, CountingJobImportService.ImportCount);
 
-        timeProvider.Advance(TimeSpan.FromMinutes(1));
+        timeProvider.Advance(TimeSpan.FromMinutes(2)); // total 6 min exceeds the 5 min interval
         await CountingJobImportService.WaitForImportCountAsync(2);
         await worker.StopAsync(CancellationToken.None);
 
@@ -184,6 +185,7 @@ public sealed class ScheduledJobImportWorkerTests
             else if (count == 2)
             {
                 secondImport.TrySetResult();
+                return Task.Delay(Timeout.InfiniteTimeSpan, cancellationToken);
             }
 
             return Task.CompletedTask;

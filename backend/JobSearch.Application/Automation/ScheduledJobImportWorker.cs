@@ -80,7 +80,7 @@ public sealed class ScheduledJobImportWorker : BackgroundService
     private bool HasRegisteredImporter()
     {
         using var scope = scopeFactory.CreateScope();
-        return scope.ServiceProvider.GetService<IJobImportService>() is not null;
+        return scope.ServiceProvider.GetRequiredService<IServiceProviderIsService>().IsService(typeof(IJobImportService));
     }
 
     private async Task RunImportAsync(CancellationToken cancellationToken)
