@@ -6,6 +6,7 @@ using JobSearch.Application.Abstractions;
 using JobSearch.Domain.Entities;
 using JobSearch.Domain.Enums;
 using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Options;
 
 namespace JobSearch.Application.Services;
 
@@ -18,22 +19,27 @@ public sealed class RemotiveJobImportService : IJobImportService
     private readonly IJobRepository repository;
     private readonly TimeProvider timeProvider;
     private readonly ILogger<RemotiveJobImportService> logger;
+    private readonly RemotiveJobImportOptions options;
 
     public RemotiveJobImportService(
         HttpClient httpClient,
         IJobRepository repository,
         TimeProvider timeProvider,
-        ILogger<RemotiveJobImportService> logger)
+        ILogger<RemotiveJobImportService> logger,
+        IOptions<RemotiveJobImportOptions>? options = null)
     {
         this.httpClient = httpClient;
         this.repository = repository;
         this.timeProvider = timeProvider;
         this.logger = logger;
+        this.options = (options ?? Options.Create(new RemotiveJobImportOptions())).Value;
+        this.options.Validate();
     }
 
     public async Task ImportAsync(CancellationToken cancellationToken = default)
     {
-        var response = await httpClient.GetFromJsonAsync<RemotiveJobsResponse>(RemoteJobsEndpoint, cancellationToken)
+        var endpoint = BuildRemoteJobsEndpoint(options);
+        var response = await httpClient.GetFromJsonAsync<RemotiveJobsResponse>(endpoint, cancellationToken)
             ?? new RemotiveJobsResponse();
 
         var seenCount = 0;
@@ -49,7 +55,37 @@ public sealed class RemotiveJobImportService : IJobImportService
             seenCount++;
         }
 
-        logger.LogInformation("Upserted {SeenCount} Remotive jobs from {Endpoint}.", seenCount, RemoteJobsEndpoint);
+        logger.LogInformation("Upserted {SeenCount} Remotive jobs from {Endpoint}.", seenCount, endpoint);
+    }
+
+    internal static string BuildRemoteJobsEndpoint(RemotiveJobImportOptions options)
+    {
+        var queryParameters = new List<KeyValuePair<string, string>>();
+
+        if (!string.IsNullOrWhiteSpace(options.RemotiveCategory))
+        {
+            queryParameters.Add(new KeyValuePair<string, string>("category", options.RemotiveCategory.Trim()));
+        }
+
+        if (!string.IsNullOrWhiteSpace(options.RemotiveSearchText))
+        {
+            queryParameters.Add(new KeyValuePair<string, string>("search", options.RemotiveSearchText.Trim()));
+        }
+
+        if (options.RemotiveLimit is > 0)
+        {
+            queryParameters.Add(new KeyValuePair<string, string>("limit", options.RemotiveLimit.Value.ToString(System.Globalization.CultureInfo.InvariantCulture)));
+        }
+
+        if (queryParameters.Count == 0)
+        {
+            return RemoteJobsEndpoint;
+        }
+
+        var queryString = string.Join("&", queryParameters.Select(parameter =>
+            $"{Uri.EscapeDataString(parameter.Key)}={Uri.EscapeDataString(parameter.Value)}"));
+
+        return $"{RemoteJobsEndpoint}?{queryString}";
     }
 
     internal static JobOpportunity MapToJobOpportunity(RemotiveJob remotiveJob, DateTimeOffset fallbackDateFound)
