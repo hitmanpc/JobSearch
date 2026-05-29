@@ -7,5 +7,6 @@ public interface IJobRepository
     Task<IReadOnlyCollection<JobOpportunity>> GetAllAsync(CancellationToken cancellationToken = default);
     Task<JobOpportunity?> GetByIdAsync(Guid id, CancellationToken cancellationToken = default);
     Task<JobOpportunity> AddAsync(JobOpportunity job, CancellationToken cancellationToken = default);
+    Task<JobOpportunity> UpsertImportedAsync(JobOpportunity job, CancellationToken cancellationToken = default);
     Task UpdateAsync(JobOpportunity job, CancellationToken cancellationToken = default);
 }

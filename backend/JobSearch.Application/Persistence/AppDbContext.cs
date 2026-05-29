@@ -32,6 +32,15 @@ public sealed class AppDbContext(DbContextOptions<AppDbContext> options) : DbCon
             entity.Property(x => x.Company).IsRequired();
             entity.Property(x => x.Title).IsRequired();
             entity.Property(x => x.GeneratedRecruiterMessage);
+            entity.Property(x => x.Source);
+            entity.Property(x => x.ExternalId);
+            entity.Property(x => x.LastSeenAt);
+            entity.HasIndex(x => new { x.Source, x.ExternalId })
+                .IsUnique()
+                .HasFilter("\"Source\" IS NOT NULL AND \"ExternalId\" IS NOT NULL");
+            entity.HasIndex(x => new { x.Source, x.Url })
+                .IsUnique()
+                .HasFilter("\"Source\" IS NOT NULL AND \"ExternalId\" IS NULL AND \"Url\" IS NOT NULL");
 
             entity.OwnsOne(x => x.FitScoreResult, owned =>
             {

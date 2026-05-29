@@ -52,6 +52,9 @@ public sealed class RemotiveJobImportServiceTests
         Assert.Equal("Worldwide", job.Location);
         Assert.Equal(RemoteType.Remote, job.RemoteType);
         Assert.Equal("https://remotive.com/remote-jobs/software-dev/senior-full-stack-engineer-123", job.Url);
+        Assert.Equal("Remotive", job.Source);
+        Assert.Equal("123", job.ExternalId);
+        Assert.NotNull(job.LastSeenAt);
         Assert.Equal(ApplicationStatus.Found, job.Status);
         Assert.Null(job.DateApplied);
         Assert.Null(job.GeneratedRecruiterMessage);
@@ -60,23 +63,23 @@ public sealed class RemotiveJobImportServiceTests
     }
 
     [Fact]
-    public async Task ImportAsync_SkipsDuplicateRemotiveUrls()
+    public async Task ImportAsync_UpsertsDuplicateRemotiveUrlsWithoutExternalIds()
     {
         const string duplicateUrl = "https://remotive.com/remote-jobs/software-dev/existing";
         var repository = new CapturingJobRepository(new JobOpportunity
         {
             Company = "Existing Co",
             Title = "Existing Role",
-            Url = duplicateUrl
+            Url = duplicateUrl,
+            Source = "Remotive"
         });
         var handler = new JsonResponseHandler($$"""
             {
               "jobs": [
                 {
-                  "id": 1,
                   "url": "{{duplicateUrl}}",
-                  "title": "Existing Role",
-                  "company_name": "Existing Co"
+                  "title": "Updated Existing Role",
+                  "company_name": "Updated Existing Co"
                 },
                 {
                   "id": 2,
@@ -102,6 +105,11 @@ public sealed class RemotiveJobImportServiceTests
         var job = Assert.Single(repository.AddedJobs);
         Assert.Equal("New Co", job.Company);
         Assert.Equal("https://remotive.com/remote-jobs/software-dev/new", job.Url);
+
+        var updatedJob = Assert.Single(repository.UpdatedJobs);
+        Assert.Equal("Updated Existing Co", updatedJob.Company);
+        Assert.Equal("Updated Existing Role", updatedJob.Title);
+        Assert.Equal(duplicateUrl, updatedJob.Url);
     }
 
     private sealed class JsonResponseHandler : HttpMessageHandler
@@ -135,6 +143,7 @@ public sealed class RemotiveJobImportServiceTests
         }
 
         public List<JobOpportunity> AddedJobs { get; } = new();
+        public List<JobOpportunity> UpdatedJobs { get; } = new();
 
         public Task<IReadOnlyCollection<JobOpportunity>> GetAllAsync(CancellationToken cancellationToken = default) =>
             Task.FromResult<IReadOnlyCollection<JobOpportunity>>(existingJobs.Concat(AddedJobs).ToArray());
@@ -148,7 +157,45 @@ public sealed class RemotiveJobImportServiceTests
             return Task.FromResult(job);
         }
 
+        public Task<JobOpportunity> UpsertImportedAsync(JobOpportunity job, CancellationToken cancellationToken = default)
+        {
+            var existing = existingJobs.Concat(AddedJobs).FirstOrDefault(existingJob => IsSameImportedJob(existingJob, job));
+            if (existing is null)
+            {
+                AddedJobs.Add(job);
+                return Task.FromResult(job);
+            }
+
+            existing.Company = job.Company;
+            existing.Title = job.Title;
+            existing.Location = job.Location;
+            existing.RemoteType = job.RemoteType;
+            existing.Url = job.Url;
+            existing.Source = job.Source;
+            existing.ExternalId = job.ExternalId;
+            existing.LastSeenAt = job.LastSeenAt;
+            existing.Description = job.Description;
+            UpdatedJobs.Add(existing);
+            return Task.FromResult(existing);
+        }
+
         public Task UpdateAsync(JobOpportunity job, CancellationToken cancellationToken = default) =>
             Task.CompletedTask;
+
+        private static bool IsSameImportedJob(JobOpportunity existingJob, JobOpportunity importedJob)
+        {
+            if (!string.Equals(existingJob.Source, importedJob.Source, StringComparison.Ordinal))
+            {
+                return false;
+            }
+
+            if (!string.IsNullOrWhiteSpace(importedJob.ExternalId))
+            {
+                return string.Equals(existingJob.ExternalId, importedJob.ExternalId, StringComparison.Ordinal);
+            }
+
+            return string.IsNullOrWhiteSpace(existingJob.ExternalId) &&
+                string.Equals(existingJob.Url, importedJob.Url, StringComparison.Ordinal);
+        }
     }
 }
