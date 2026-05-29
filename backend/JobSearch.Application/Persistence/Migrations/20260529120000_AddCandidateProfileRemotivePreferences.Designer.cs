@@ -14,7 +14,7 @@ namespace JobSearch.Application.Persistence.Migrations
     [Migration("20260529120000_AddCandidateProfileRemotivePreferences")]
     partial class AddCandidateProfileRemotivePreferences
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder.HasAnnotation("ProductVersion", "10.0.0");
