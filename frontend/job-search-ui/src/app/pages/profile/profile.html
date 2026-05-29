@@ -17,6 +17,48 @@
         rows="24"
       ></textarea>
 
+
+      <section class="remotive-preferences" aria-labelledby="remotive-preferences-heading">
+        <h2 id="remotive-preferences-heading" class="section-title">Remotive Import Preferences</h2>
+        <p class="help-text">Optional overrides for scheduled Remotive imports. Leave a field blank to use the backend appsettings default.</p>
+
+        <label class="field-label" for="remotive-category">Remotive category</label>
+        <input
+          id="remotive-category"
+          class="text-input"
+          type="text"
+          [ngModel]="remotiveCategory()"
+          (ngModelChange)="remotiveCategory.set($event)"
+          placeholder="Example: Software Development"
+        />
+
+        <label class="field-label" for="remotive-search-text">Remotive search text</label>
+        <input
+          id="remotive-search-text"
+          class="text-input"
+          type="text"
+          [ngModel]="remotiveSearchText()"
+          (ngModelChange)="remotiveSearchText.set($event)"
+          placeholder="Example: senior full stack angular"
+        />
+
+        <label class="field-label" for="remotive-limit">Remotive limit</label>
+        <input
+          id="remotive-limit"
+          class="text-input"
+          type="number"
+          min="1"
+          step="1"
+          [ngModel]="remotiveLimit()"
+          (ngModelChange)="setRemotiveLimit($event)"
+          placeholder="Example: 50"
+          [class.invalid]="!!remotiveLimitError()"
+        />
+        @if (remotiveLimitError()) {
+          <span class="error-message">{{ remotiveLimitError() }}</span>
+        }
+      </section>
+
       <div class="form-footer">
         @if (savedMessage()) {
           <span class="success-message">{{ savedMessage() }}</span>
@@ -24,8 +66,8 @@
         @if (errorMessage()) {
           <span class="error-message">{{ errorMessage() }}</span>
         }
-        <button class="btn-primary" type="button" (click)="save()" [disabled]="isSaving()">
-          {{ isSaving() ? 'Saving…' : 'Save Resume' }}
+        <button class="btn-primary" type="button" (click)="save()" [disabled]="isSaving() || !!remotiveLimitError()">
+          {{ isSaving() ? 'Saving…' : 'Save Profile' }}
         </button>
       </div>
     </section>

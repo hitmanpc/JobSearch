@@ -5,7 +5,8 @@
 }
 
 .profile-form,
-.job-import-panel {
+.job-import-panel,
+.remotive-preferences {
   display: flex;
   flex-direction: column;
   gap: 0.75rem;
@@ -46,6 +47,7 @@
   color: #344054;
 }
 
+.text-input,
 .resume-textarea {
   width: 100%;
   padding: 0.75rem 1rem;
@@ -57,10 +59,27 @@
   color: #182033;
 }
 
+.text-input:focus,
 .resume-textarea:focus {
   outline: none;
   border-color: #1843a3;
   box-shadow: 0 0 0 3px #eef3ff;
+}
+
+.text-input.invalid {
+  border-color: #b42318;
+}
+
+.remotive-preferences {
+  margin-top: 1rem;
+  padding-top: 1rem;
+  border-top: 1px solid #e4e7ec;
+}
+
+.help-text {
+  margin: 0;
+  color: #667085;
+  font-size: 0.875rem;
 }
 
 .form-footer {

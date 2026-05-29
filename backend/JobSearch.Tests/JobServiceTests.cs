@@ -122,6 +122,12 @@ public sealed class JobServiceTests
 
     private sealed class StubCandidateProfileService : ICandidateProfileService
     {
+        public Task<CandidateProfileSettingsSnapshot> GetSettingsAsync(CancellationToken cancellationToken = default) =>
+            Task.FromResult(new CandidateProfileSettingsSnapshot(string.Empty, null, null, null));
+
+        public Task SaveSettingsAsync(CandidateProfileSettingsSnapshot settings, CancellationToken cancellationToken = default) =>
+            Task.CompletedTask;
+
         public Task<string> GetResumeTextAsync(CancellationToken cancellationToken = default) =>
             Task.FromResult(string.Empty);
 

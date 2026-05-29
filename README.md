@@ -261,6 +261,9 @@ JobImport__Enabled: ${JOB_IMPORT_ENABLED:-false}
 JobImport__Provider: ${JOB_IMPORT_PROVIDER:-Remotive}
 JobImport__IntervalMinutes: ${JOB_IMPORT_INTERVAL_MINUTES:-60}
 JobImport__RemotiveBaseUrl: ${JOB_IMPORT_REMOTIVE_BASE_URL:-https://remotive.com}
+JobImport__RemotiveCategory: ${JOB_IMPORT_REMOTIVE_CATEGORY:-}
+JobImport__RemotiveSearchText: ${JOB_IMPORT_REMOTIVE_SEARCH_TEXT:-}
+JobImport__RemotiveLimit: ${JOB_IMPORT_REMOTIVE_LIMIT:-50}
 ```
 
 To enable scheduled Remotive imports in Docker, create or update a local `.env` file in the repository root (do not commit it):
@@ -270,6 +273,9 @@ JOB_IMPORT_ENABLED=true
 JOB_IMPORT_PROVIDER=Remotive
 JOB_IMPORT_INTERVAL_MINUTES=60
 JOB_IMPORT_REMOTIVE_BASE_URL=https://remotive.com
+JOB_IMPORT_REMOTIVE_CATEGORY=Software Development
+JOB_IMPORT_REMOTIVE_SEARCH_TEXT=senior full stack angular
+JOB_IMPORT_REMOTIVE_LIMIT=50
 ```
 
 Apply the setting by recreating the API container:
@@ -292,12 +298,23 @@ For non-Docker local runs, use the `JobImport` section in `backend/JobSearch.Api
     "Enabled": false,
     "Provider": "Remotive",
     "IntervalMinutes": 60,
-    "RemotiveBaseUrl": "https://remotive.com"
+    "RemotiveBaseUrl": "https://remotive.com",
+    "RemotiveCategory": "",
+    "RemotiveSearchText": "",
+    "RemotiveLimit": 50
   }
 }
 ```
 
 The importer reads public Remotive job data only. It does not scrape prohibited sites, generate recruiter outreach automatically, or submit applications.
+
+The **My Profile** page includes editable Remotive import preferences that are stored with the candidate profile:
+
+- **Remotive category** maps to the Remotive `category` query parameter. Leave it blank to use `JobImport:RemotiveCategory` from appsettings or environment variables.
+- **Remotive search text** maps to the Remotive `search` query parameter. Leave it blank to use `JobImport:RemotiveSearchText`.
+- **Remotive limit** maps to the Remotive `limit` query parameter. It must be a positive whole number when provided; leave it blank to use `JobImport:RemotiveLimit`.
+
+Profile-stored Remotive preferences override the appsettings or Docker environment defaults only when they contain a value. Empty category/search fields and an empty limit fall back to the backend configuration values above.
 
 ### Tests
 
@@ -333,6 +350,7 @@ The Angular dev server usually listens on:
 
 ### Frontend Features
 
+- My Profile page with resume text and editable Remotive import preference controls
 - Job list page with add job form
 - Job detail page
 - Simple application pipeline view

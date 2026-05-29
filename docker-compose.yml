@@ -15,6 +15,9 @@ services:
       JobImport__Provider: ${JOB_IMPORT_PROVIDER:-Remotive}
       JobImport__IntervalMinutes: ${JOB_IMPORT_INTERVAL_MINUTES:-60}
       JobImport__RemotiveBaseUrl: ${JOB_IMPORT_REMOTIVE_BASE_URL:-https://remotive.com}
+      JobImport__RemotiveCategory: ${JOB_IMPORT_REMOTIVE_CATEGORY:-}
+      JobImport__RemotiveSearchText: ${JOB_IMPORT_REMOTIVE_SEARCH_TEXT:-}
+      JobImport__RemotiveLimit: ${JOB_IMPORT_REMOTIVE_LIMIT:-50}
     extra_hosts:
       - "host.docker.internal:host-gateway"
     ports:

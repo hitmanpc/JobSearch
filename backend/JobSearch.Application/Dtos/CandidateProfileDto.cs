@@ -1,9 +1,16 @@
 namespace JobSearch.Application.Dtos;
 
-public sealed record CandidateProfileRequestDto(string? ResumeText);
+public sealed record CandidateProfileRequestDto(
+    string? ResumeText,
+    string? RemotiveCategory,
+    string? RemotiveSearchText,
+    int? RemotiveLimit);
 
 public sealed record CandidateProfileResponseDto(
     string ResumeText,
+    string? RemotiveCategory,
+    string? RemotiveSearchText,
+    int? RemotiveLimit,
     JobImportStatusDto JobImportStatus);
 
 public sealed record JobImportStatusDto(

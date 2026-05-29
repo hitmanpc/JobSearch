@@ -2,6 +2,7 @@ using JobSearch.Api.Controllers;
 using JobSearch.Application.Dtos;
 using JobSearch.Application.Services;
 using JobSearch.Domain.Entities;
+using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Configuration;
 using Xunit;
 
@@ -25,13 +26,16 @@ public sealed class CandidateProfileControllerTests
             NextExpectedRunAt = nextExpectedRunAt
         });
         var controller = new CandidateProfileController(
-            new StubCandidateProfileService("Senior full-stack engineer resume"),
+            new StubCandidateProfileService(new CandidateProfileSettingsSnapshot("Senior full-stack engineer resume", "Software Development", "angular", 25)),
             statusService,
             CreateConfiguration(enabled: true, intervalMinutes: 30));
 
         var response = await controller.GetAsync(CancellationToken.None);
 
         Assert.Equal("Senior full-stack engineer resume", response.ResumeText);
+        Assert.Equal("Software Development", response.RemotiveCategory);
+        Assert.Equal("angular", response.RemotiveSearchText);
+        Assert.Equal(25, response.RemotiveLimit);
         Assert.True(response.JobImportStatus.WorkerEnabled);
         Assert.Equal(30, response.JobImportStatus.ConfiguredIntervalMinutes);
         Assert.Equal(startedAt, response.JobImportStatus.LastRunStartedAt);
@@ -57,11 +61,34 @@ public sealed class CandidateProfileControllerTests
             statusService,
             CreateConfiguration(enabled: true, intervalMinutes: 15));
 
-        await controller.PutAsync(new CandidateProfileRequestDto("Updated resume"), CancellationToken.None);
+        await controller.PutAsync(new CandidateProfileRequestDto("Updated resume", "Software Development", "c#", 50), CancellationToken.None);
 
-        Assert.Equal("Updated resume", candidateProfileService.SavedResumeText);
+        Assert.NotNull(candidateProfileService.SavedSettings);
+        Assert.Equal("Updated resume", candidateProfileService.SavedSettings.ResumeText);
+        Assert.Equal("Software Development", candidateProfileService.SavedSettings.RemotiveCategory);
+        Assert.Equal("c#", candidateProfileService.SavedSettings.RemotiveSearchText);
+        Assert.Equal(50, candidateProfileService.SavedSettings.RemotiveLimit);
         Assert.Equal(0, statusService.GetCallCount);
         Assert.Null(typeof(CandidateProfileRequestDto).GetProperty(nameof(CandidateProfileResponseDto.JobImportStatus)));
+    }
+
+
+    [Theory]
+    [InlineData(0)]
+    [InlineData(-1)]
+    public async Task PutAsync_WhenRemotiveLimitIsNotPositive_ReturnsValidationProblem(int limit)
+    {
+        var candidateProfileService = new StubCandidateProfileService();
+        var controller = new CandidateProfileController(
+            candidateProfileService,
+            new StubScheduledJobRunStatusService(new ScheduledJobRunStatus()),
+            CreateConfiguration(enabled: true, intervalMinutes: 15));
+
+        var result = await controller.PutAsync(new CandidateProfileRequestDto("Updated resume", null, null, limit), CancellationToken.None);
+
+        var validation = Assert.IsType<ObjectResult>(result);
+        Assert.Equal(400, validation.StatusCode);
+        Assert.Null(candidateProfileService.SavedSettings);
     }
 
     private static IConfiguration CreateConfiguration(bool enabled, int intervalMinutes) =>
@@ -75,21 +102,30 @@ public sealed class CandidateProfileControllerTests
 
     private sealed class StubCandidateProfileService : ICandidateProfileService
     {
-        private readonly string resumeText;
+        private readonly CandidateProfileSettingsSnapshot settings;
 
-        public StubCandidateProfileService(string resumeText = "")
+        public StubCandidateProfileService(CandidateProfileSettingsSnapshot? settings = null)
         {
-            this.resumeText = resumeText;
+            this.settings = settings ?? new CandidateProfileSettingsSnapshot(string.Empty, null, null, null);
         }
 
-        public string? SavedResumeText { get; private set; }
+        public CandidateProfileSettingsSnapshot? SavedSettings { get; private set; }
+
+        public Task<CandidateProfileSettingsSnapshot> GetSettingsAsync(CancellationToken cancellationToken = default) =>
+            Task.FromResult(settings);
+
+        public Task SaveSettingsAsync(CandidateProfileSettingsSnapshot settings, CancellationToken cancellationToken = default)
+        {
+            SavedSettings = settings;
+            return Task.CompletedTask;
+        }
 
         public Task<string> GetResumeTextAsync(CancellationToken cancellationToken = default) =>
-            Task.FromResult(resumeText);
+            Task.FromResult(settings.ResumeText);
 
         public Task SaveResumeTextAsync(string resumeText, CancellationToken cancellationToken = default)
         {
-            SavedResumeText = resumeText;
+            SavedSettings = settings with { ResumeText = resumeText };
             return Task.CompletedTask;
         }
     }

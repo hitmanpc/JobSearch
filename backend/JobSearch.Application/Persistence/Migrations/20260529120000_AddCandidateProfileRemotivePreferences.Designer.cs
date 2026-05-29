@@ -3,6 +3,7 @@ using System;
 using JobSearch.Application.Persistence;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 #nullable disable
@@ -10,7 +11,8 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace JobSearch.Application.Persistence.Migrations
 {
     [DbContext(typeof(AppDbContext))]
-    partial class AppDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260529120000_AddCandidateProfileRemotivePreferences")]
+    partial class AddCandidateProfileRemotivePreferences
     {
         protected override void BuildModel(ModelBuilder modelBuilder)
         {
