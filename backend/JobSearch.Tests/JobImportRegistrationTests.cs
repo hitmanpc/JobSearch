@@ -2,6 +2,7 @@ using JobSearch.Application.Abstractions;
 using JobSearch.Application.Services;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Options;
 using Xunit;
 
 namespace JobSearch.Tests;
@@ -42,6 +43,29 @@ public sealed class JobImportRegistrationTests
         var exception = Assert.Throws<InvalidOperationException>(() => services.AddConfiguredJobImport(configuration));
         Assert.Equal("JobImport:Provider must be Remotive.", exception.Message);
         Assert.DoesNotContain(services, descriptor => descriptor.ServiceType == typeof(IJobImportService));
+    }
+
+
+    [Theory]
+    [InlineData(0)]
+    [InlineData(-1)]
+    public void AddConfiguredJobImport_WhenConfiguredWithNonPositiveLimit_RejectsLimit(int limit)
+    {
+        var configuration = new ConfigurationBuilder()
+            .AddInMemoryCollection(new Dictionary<string, string?>
+            {
+                ["JobImport:Provider"] = "Remotive",
+                ["JobImport:RemotiveLimit"] = limit.ToString(System.Globalization.CultureInfo.InvariantCulture)
+            })
+            .Build();
+        var services = new ServiceCollection();
+
+        services.AddConfiguredJobImport(configuration);
+
+        using var provider = services.BuildServiceProvider();
+        var exception = Assert.Throws<OptionsValidationException>(() =>
+            provider.GetRequiredService<IOptions<RemotiveJobImportOptions>>().Value);
+        Assert.Contains("JobImport:RemotiveLimit must be a positive integer when configured.", exception.Failures);
     }
 
     private static ServiceCollection CreateServices(Dictionary<string, string?> configurationValues)

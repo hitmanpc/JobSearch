@@ -4,6 +4,7 @@ using JobSearch.Application.Services;
 using JobSearch.Domain.Entities;
 using JobSearch.Domain.Enums;
 using Microsoft.Extensions.Logging.Abstractions;
+using Microsoft.Extensions.Options;
 using Xunit;
 
 namespace JobSearch.Tests;
@@ -62,6 +63,53 @@ public sealed class RemotiveJobImportServiceTests
         Assert.Contains("Build APIs & Angular apps.", job.Description);
     }
 
+
+    [Theory]
+    [InlineData("Software Development", null, null, "https://remotive.com/api/remote-jobs?category=Software%20Development")]
+    [InlineData(null, "senior full stack", null, "https://remotive.com/api/remote-jobs?search=senior%20full%20stack")]
+    [InlineData(null, null, 25, "https://remotive.com/api/remote-jobs?limit=25")]
+    [InlineData("Software Development", "c# angular", 25, "https://remotive.com/api/remote-jobs?category=Software%20Development&search=c%23%20angular&limit=25")]
+    public async Task ImportAsync_UsesConfiguredRemotiveQueryParameters(
+        string? category,
+        string? searchText,
+        int? limit,
+        string expectedUri)
+    {
+        var handler = new JsonResponseHandler("""{"jobs": []}""");
+        using var httpClient = new HttpClient(handler)
+        {
+            BaseAddress = new Uri("https://remotive.com")
+        };
+        var service = CreateService(httpClient, new CapturingJobRepository(), new RemotiveJobImportOptions
+        {
+            RemotiveCategory = category,
+            RemotiveSearchText = searchText,
+            RemotiveLimit = limit
+        });
+
+        await service.ImportAsync();
+
+        Assert.Equal(new Uri(expectedUri), handler.RequestUri);
+    }
+
+    [Theory]
+    [InlineData(0)]
+    [InlineData(-1)]
+    public void Constructor_WhenConfiguredWithNonPositiveLimit_RejectsLimit(int limit)
+    {
+        using var httpClient = new HttpClient(new JsonResponseHandler("""{"jobs": []}"""))
+        {
+            BaseAddress = new Uri("https://remotive.com")
+        };
+
+        var exception = Assert.Throws<InvalidOperationException>(() => CreateService(
+            httpClient,
+            new CapturingJobRepository(),
+            new RemotiveJobImportOptions { RemotiveLimit = limit }));
+
+        Assert.Equal("JobImport:RemotiveLimit must be a positive integer when configured.", exception.Message);
+    }
+
     [Fact]
     public async Task ImportAsync_UpsertsDuplicateRemotiveUrlsWithoutExternalIds()
     {
@@ -110,6 +158,20 @@ public sealed class RemotiveJobImportServiceTests
         Assert.Equal("Updated Existing Co", updatedJob.Company);
         Assert.Equal("Updated Existing Role", updatedJob.Title);
         Assert.Equal(duplicateUrl, updatedJob.Url);
+    }
+
+
+    private static RemotiveJobImportService CreateService(
+        HttpClient httpClient,
+        CapturingJobRepository repository,
+        RemotiveJobImportOptions? options = null)
+    {
+        return new RemotiveJobImportService(
+            httpClient,
+            repository,
+            TimeProvider.System,
+            NullLogger<RemotiveJobImportService>.Instance,
+            Options.Create(options ?? new RemotiveJobImportOptions()));
     }
 
     private sealed class JsonResponseHandler : HttpMessageHandler
