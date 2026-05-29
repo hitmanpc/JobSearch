@@ -33,12 +33,14 @@ public sealed class ScheduledJobImportWorker : BackgroundService
     {
         if (!IsEnabled(configuration))
         {
+            await MarkDisabledAsync(CancellationToken.None);
             logger.LogInformation("Scheduled job import worker is disabled.");
             return;
         }
 
         if (!HasRegisteredImporter())
         {
+            await MarkNoImporterConfiguredAsync(CancellationToken.None);
             logger.LogWarning("Scheduled job import worker is enabled, but no supported job import provider is registered.");
             return;
         }
@@ -48,7 +50,14 @@ public sealed class ScheduledJobImportWorker : BackgroundService
 
         while (!stoppingToken.IsCancellationRequested)
         {
-            await RunImportAsync(stoppingToken);
+            var completed = await RunImportAsync(stoppingToken);
+            if (!completed || stoppingToken.IsCancellationRequested)
+            {
+                break;
+            }
+
+            var nextExpectedRunAt = timeProvider.GetUtcNow().Add(interval);
+            await MarkNextRunScheduledAsync(nextExpectedRunAt, stoppingToken);
 
             try
             {
@@ -83,24 +92,52 @@ public sealed class ScheduledJobImportWorker : BackgroundService
         return scope.ServiceProvider.GetRequiredService<IServiceProviderIsService>().IsService(typeof(IJobImportService));
     }
 
-    private async Task RunImportAsync(CancellationToken cancellationToken)
+    private async Task<bool> RunImportAsync(CancellationToken cancellationToken)
     {
         logger.LogInformation("Scheduled job import run started.");
 
         try
         {
             using var scope = scopeFactory.CreateScope();
+            var lifecycle = scope.ServiceProvider.GetRequiredService<IScheduledJobRunStatusService>();
+            await lifecycle.MarkStartedAsync(cancellationToken);
+
             var importer = scope.ServiceProvider.GetRequiredService<IJobImportService>();
             await importer.ImportAsync(cancellationToken);
+
+            await lifecycle.MarkSucceededAsync(cancellationToken);
             logger.LogInformation("Scheduled job import run completed successfully.");
+            return true;
         }
         catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
         {
             logger.LogInformation("Scheduled job import run canceled.");
+            return false;
         }
         catch (Exception exception)
         {
+            await MarkFailedAsync(exception, CancellationToken.None);
             logger.LogError(exception, "Scheduled job import run failed.");
+            return true;
         }
+    }
+
+    private Task MarkDisabledAsync(CancellationToken cancellationToken) =>
+        UpdateLifecycleAsync(lifecycle => lifecycle.MarkDisabledAsync(cancellationToken));
+
+    private Task MarkNoImporterConfiguredAsync(CancellationToken cancellationToken) =>
+        UpdateLifecycleAsync(lifecycle => lifecycle.MarkNoImporterConfiguredAsync(cancellationToken));
+
+    private Task MarkFailedAsync(Exception exception, CancellationToken cancellationToken) =>
+        UpdateLifecycleAsync(lifecycle => lifecycle.MarkFailedAsync(exception, cancellationToken));
+
+    private Task MarkNextRunScheduledAsync(DateTimeOffset nextExpectedRunAt, CancellationToken cancellationToken) =>
+        UpdateLifecycleAsync(lifecycle => lifecycle.MarkNextRunScheduledAsync(nextExpectedRunAt, cancellationToken));
+
+    private async Task UpdateLifecycleAsync(Func<IScheduledJobRunStatusService, Task> update)
+    {
+        using var scope = scopeFactory.CreateScope();
+        var lifecycle = scope.ServiceProvider.GetRequiredService<IScheduledJobRunStatusService>();
+        await update(lifecycle);
     }
 }
