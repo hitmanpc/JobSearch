@@ -2,6 +2,7 @@ using JobSearch.Application.Persistence;
 using Microsoft.EntityFrameworkCore;
 using System.Text.Json.Serialization;
 using JobSearch.Application.Abstractions;
+using JobSearch.Application.Automation;
 using JobSearch.Application.Repositories;
 using JobSearch.Application.Services;
 using Microsoft.EntityFrameworkCore.Diagnostics;
@@ -86,6 +87,8 @@ builder.Services.AddScoped<IFitScoringService>(serviceProvider =>
     throw new InvalidOperationException("FitScoringProvider must be Mock, OpenAI, or Ollama.");
 });
 builder.Services.AddScoped<IJobService, JobService>();
+builder.Services.AddScoped<IJobImportService, NoOpJobImportService>();
+builder.Services.AddHostedService<ScheduledJobImportWorker>();
 
 var app = builder.Build();
 

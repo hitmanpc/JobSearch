@@ -249,6 +249,29 @@ Content-Type: application/json
 }
 ```
 
+
+### Scheduled Job Import
+
+The backend includes a hosted scheduled import worker. It is disabled by default and currently uses a no-op importer so the app never scrapes job sites or auto-submits applications.
+
+For local configuration, use the `JobImport` section in `backend/JobSearch.Api/appsettings.json`:
+
+```json
+{
+  "JobImport": {
+    "Enabled": false,
+    "IntervalMinutes": 60
+  }
+}
+```
+
+For Docker, enable or tune the worker with environment variables in a local `.env` file:
+
+```env
+JOB_IMPORT_ENABLED=true
+JOB_IMPORT_INTERVAL_MINUTES=30
+```
+
 ### Tests
 
 ```powershell
