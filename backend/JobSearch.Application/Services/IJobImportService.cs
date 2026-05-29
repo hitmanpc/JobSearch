@@ -1,4 +1,4 @@
-namespace JobSearch.Application.Automation;
+namespace JobSearch.Application.Services;
 
 public interface IJobImportService
 {

@@ -1,4 +1,5 @@
 using JobSearch.Application.Automation;
+using JobSearch.Application.Services;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging.Abstractions;
@@ -9,6 +10,22 @@ namespace JobSearch.Tests;
 
 public sealed class ScheduledJobImportWorkerTests
 {
+    [Fact]
+    public async Task StartAsync_WhenEnabledWithoutRegisteredImporter_DoesNotThrow()
+    {
+        await using var provider = CreateProvider(
+            new Dictionary<string, string?>
+            {
+                ["JobImport:Enabled"] = "true",
+                ["JobImport:IntervalMinutes"] = "1"
+            },
+            registerDefaultImporter: false);
+        var worker = CreateWorker(provider);
+
+        await worker.StartAsync(CancellationToken.None);
+        await worker.StopAsync(CancellationToken.None);
+    }
+
     [Fact]
     public async Task StartAsync_WhenJobImportDisabled_DoesNotRunImporter()
     {
@@ -95,7 +112,8 @@ public sealed class ScheduledJobImportWorkerTests
 
     private static ServiceProvider CreateProvider(
         Dictionary<string, string?> configurationValues,
-        Action<IServiceCollection>? configureServices = null)
+        Action<IServiceCollection>? configureServices = null,
+        bool registerDefaultImporter = true)
     {
         var services = new ServiceCollection();
         var configuration = new ConfigurationBuilder()
@@ -106,7 +124,7 @@ public sealed class ScheduledJobImportWorkerTests
         services.AddSingleton<TimeProvider>(TimeProvider.System);
         services.AddLogging();
         configureServices?.Invoke(services);
-        if (!services.Any(descriptor => descriptor.ServiceType == typeof(IJobImportService)))
+        if (registerDefaultImporter && !services.Any(descriptor => descriptor.ServiceType == typeof(IJobImportService)))
         {
             services.AddScoped<IJobImportService, CountingJobImportService>();
         }

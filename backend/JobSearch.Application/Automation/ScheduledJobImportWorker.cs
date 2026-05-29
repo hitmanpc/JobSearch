@@ -1,3 +1,4 @@
+using JobSearch.Application.Services;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
@@ -36,6 +37,12 @@ public sealed class ScheduledJobImportWorker : BackgroundService
             return;
         }
 
+        if (!HasRegisteredImporter())
+        {
+            logger.LogWarning("Scheduled job import worker is enabled, but no supported job import provider is registered.");
+            return;
+        }
+
         var interval = GetInterval(configuration);
         logger.LogInformation("Scheduled job import worker started with interval {Interval}.", interval);
 
@@ -68,6 +75,12 @@ public sealed class ScheduledJobImportWorker : BackgroundService
         }
 
         return TimeSpan.FromMinutes(intervalMinutes);
+    }
+
+    private bool HasRegisteredImporter()
+    {
+        using var scope = scopeFactory.CreateScope();
+        return scope.ServiceProvider.GetService<IJobImportService>() is not null;
     }
 
     private async Task RunImportAsync(CancellationToken cancellationToken)
