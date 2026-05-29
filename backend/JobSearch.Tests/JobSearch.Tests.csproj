@@ -18,6 +18,7 @@
   </ItemGroup>
 
   <ItemGroup>
+    <ProjectReference Include="..\JobSearch.Api\JobSearch.Api.csproj" />
     <ProjectReference Include="..\JobSearch.Application\JobSearch.Application.csproj" />
     <ProjectReference Include="..\JobSearch.Domain\JobSearch.Domain.csproj" />
   </ItemGroup>

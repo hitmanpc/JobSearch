@@ -1,7 +1,7 @@
 import { HttpClient } from '@angular/common/http';
 import { Injectable } from '@angular/core';
 import { Observable } from 'rxjs';
-import { CandidateProfile } from '../models/candidate-profile';
+import { CandidateProfileRequest, CandidateProfileResponse } from '../models/candidate-profile';
 
 @Injectable({
   providedIn: 'root'
@@ -11,11 +11,11 @@ export class CandidateProfileService {
 
   constructor(private readonly http: HttpClient) {}
 
-  getProfile(): Observable<CandidateProfile> {
-    return this.http.get<CandidateProfile>(this.baseUrl);
+  getProfile(): Observable<CandidateProfileResponse> {
+    return this.http.get<CandidateProfileResponse>(this.baseUrl);
   }
 
-  saveProfile(profile: CandidateProfile): Observable<void> {
+  saveProfile(profile: CandidateProfileRequest): Observable<void> {
     return this.http.put<void>(this.baseUrl, profile);
   }
 }

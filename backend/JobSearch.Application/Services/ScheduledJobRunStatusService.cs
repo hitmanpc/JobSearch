@@ -20,6 +20,14 @@ public sealed class ScheduledJobRunStatusService : IScheduledJobRunStatusService
         this.timeProvider = timeProvider;
     }
 
+    public async Task<ScheduledJobRunStatus> GetAsync(CancellationToken cancellationToken = default)
+    {
+        return await dbContext.ScheduledJobRunStatuses
+            .AsNoTracking()
+            .SingleOrDefaultAsync(x => x.Id == ScheduledJobRunStatus.SingletonId, cancellationToken)
+            ?? new ScheduledJobRunStatus { Id = ScheduledJobRunStatus.SingletonId };
+    }
+
     public Task MarkDisabledAsync(CancellationToken cancellationToken = default) =>
         UpdateAsync(
             status =>
