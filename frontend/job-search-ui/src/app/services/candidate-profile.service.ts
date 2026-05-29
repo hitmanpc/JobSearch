@@ -1,6 +1,6 @@
 import { HttpClient } from '@angular/common/http';
 import { Injectable } from '@angular/core';
-import { Observable } from 'rxjs';
+import { Observable, map } from 'rxjs';
 import { CandidateProfileRequest, CandidateProfileResponse } from '../models/candidate-profile';
 
 @Injectable({
@@ -12,7 +12,21 @@ export class CandidateProfileService {
   constructor(private readonly http: HttpClient) {}
 
   getProfile(): Observable<CandidateProfileResponse> {
-    return this.http.get<CandidateProfileResponse>(this.baseUrl);
+    return this.http.get<CandidateProfileResponse>(this.baseUrl).pipe(
+      map(profile => ({
+        resumeText: profile.resumeText,
+        jobImportStatus: {
+          workerEnabled: profile.jobImportStatus.workerEnabled,
+          configuredIntervalMinutes: profile.jobImportStatus.configuredIntervalMinutes,
+          lastRunStartedAt: profile.jobImportStatus.lastRunStartedAt,
+          lastRunCompletedAt: profile.jobImportStatus.lastRunCompletedAt,
+          lastRunSucceeded: profile.jobImportStatus.lastRunSucceeded,
+          lastResult: profile.jobImportStatus.lastResult,
+          lastErrorMessage: profile.jobImportStatus.lastErrorMessage,
+          nextExpectedRunAt: profile.jobImportStatus.nextExpectedRunAt
+        }
+      }))
+    );
   }
 
   saveProfile(profile: CandidateProfileRequest): Observable<void> {
