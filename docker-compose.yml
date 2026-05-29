@@ -12,7 +12,9 @@ services:
       Ollama__BaseUrl: ${OLLAMA_BASE_URL:-http://host.docker.internal:11434/v1}
       Ollama__Model: ${OLLAMA_MODEL:-qwen2.5:14b}
       JobImport__Enabled: ${JOB_IMPORT_ENABLED:-false}
+      JobImport__Provider: ${JOB_IMPORT_PROVIDER:-Remotive}
       JobImport__IntervalMinutes: ${JOB_IMPORT_INTERVAL_MINUTES:-60}
+      JobImport__RemotiveBaseUrl: ${JOB_IMPORT_REMOTIVE_BASE_URL:-https://remotive.com}
     extra_hosts:
       - "host.docker.internal:host-gateway"
     ports:

@@ -250,27 +250,54 @@ Content-Type: application/json
 ```
 
 
-### Scheduled Job Import
+### Scheduled Remotive Job Import
 
-The backend includes a hosted scheduled import worker. It is disabled by default and currently uses a no-op importer so the app never scrapes job sites or auto-submits applications.
+The backend includes a hosted scheduled import worker that runs inside the existing API process. The default Docker stack does not add a worker container and remains dependency-light: SQLite is used for persistence, mock AI remains enabled, and the scheduled import is disabled unless you opt in.
 
-For local configuration, use the `JobImport` section in `backend/JobSearch.Api/appsettings.json`:
+The committed Docker defaults configure the import provider as Remotive while leaving the schedule off:
+
+```yaml
+JobImport__Enabled: ${JOB_IMPORT_ENABLED:-false}
+JobImport__Provider: ${JOB_IMPORT_PROVIDER:-Remotive}
+JobImport__IntervalMinutes: ${JOB_IMPORT_INTERVAL_MINUTES:-60}
+JobImport__RemotiveBaseUrl: ${JOB_IMPORT_REMOTIVE_BASE_URL:-https://remotive.com}
+```
+
+To enable scheduled Remotive imports in Docker, create or update a local `.env` file in the repository root (do not commit it):
+
+```env
+JOB_IMPORT_ENABLED=true
+JOB_IMPORT_PROVIDER=Remotive
+JOB_IMPORT_INTERVAL_MINUTES=60
+JOB_IMPORT_REMOTIVE_BASE_URL=https://remotive.com
+```
+
+Apply the setting by recreating the API container:
+
+```powershell
+docker-compose up -d --build api frontend
+```
+
+To disable the scheduled import again, set `JOB_IMPORT_ENABLED=false` or remove the job import entries from `.env`, then recreate the API container:
+
+```powershell
+docker-compose up -d --force-recreate api frontend
+```
+
+For non-Docker local runs, use the `JobImport` section in `backend/JobSearch.Api/appsettings.json`:
 
 ```json
 {
   "JobImport": {
     "Enabled": false,
-    "IntervalMinutes": 60
+    "Provider": "Remotive",
+    "IntervalMinutes": 60,
+    "RemotiveBaseUrl": "https://remotive.com"
   }
 }
 ```
 
-For Docker, enable or tune the worker with environment variables in a local `.env` file:
-
-```env
-JOB_IMPORT_ENABLED=true
-JOB_IMPORT_INTERVAL_MINUTES=30
-```
+The importer reads public Remotive job data only. It does not scrape prohibited sites, generate recruiter outreach automatically, or submit applications.
 
 ### Tests
 
